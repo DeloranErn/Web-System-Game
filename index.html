@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hallway Dodgeball</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="min-h-screen bg-[#f4f1e8] text-slate-900 antialiased">
+    <main class="mx-auto flex min-h-screen w-full max-w-7xl flex-col items-center justify-center gap-4 px-4 py-5">
+        <div class="flex w-full flex-col items-center justify-center gap-4 lg:flex-row">
+            <aside id="powerPanel" class="w-full shrink-0 self-center rounded-lg border-2 border-slate-800 bg-white/85 p-3 shadow-[5px_5px_0_rgba(15,23,42,0.18)] lg:w-56">
+                <h2 class="text-sm font-black uppercase tracking-[0.18em] text-slate-800">Power Ups</h2>
+                <div id="coinText" class="mt-2 rounded-lg border-2 border-amber-600 bg-amber-100 px-3 py-2 text-center text-sm font-black uppercase tracking-wide text-amber-900">Coins: 0</div>
+                <div id="powerList" class="mt-3 space-y-2"></div>
+            </aside>
+
+        <section class="w-full max-w-[1100px]">
+            <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <p class="text-xs font-black uppercase tracking-[0.28em] text-emerald-700">AIM HIGH? AIM BETTER.</p>
+                    <h1 class="text-3xl font-black uppercase tracking-wide text-slate-950 sm:text-5xl">STI Dodgeball</h1>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 text-center text-sm sm:text-base">
+                    <div class="hud-tile">
+                        <span>Score</span>
+                        <strong id="scoreText">0</strong>
+                    </div>
+                    <div class="hud-tile">
+                        <span>Round</span>
+                        <strong id="levelText">1</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="relative overflow-hidden rounded-lg border-4 border-slate-800 bg-[#ead7a6] shadow-[0_18px_45px_rgba(15,23,42,0.22)]">
+                <canvas id="gameCanvas" width="1080" height="768" class="block aspect-[45/32] w-full"></canvas>
+                <div id="overlay" class="pointer-events-none absolute inset-0 flex items-center justify-center bg-slate-950/45 px-6 text-center">
+                    <div>
+                        <p id="overlayTitle" class="text-3xl font-black uppercase tracking-wider text-white sm:text-5xl">Ready?</p>
+                        <p id="overlayText" class="mt-3 max-w-xl text-sm leading-6 text-white sm:text-base">
+                            Press Start. Move with WASD or arrows, then throw with Space when your cooldown is ready.
+                        </p>
+                    </div>
+                </div>
+                <div id="cardOverlay" class="absolute inset-0 hidden items-center justify-center bg-slate-950/70 px-5">
+                    <div class="w-full max-w-3xl text-center">
+                        <p class="text-sm font-black uppercase tracking-[0.28em] text-amber-200">Choose Power Ups</p>
+                        <h2 class="mt-2 text-3xl font-black uppercase text-white sm:text-5xl">Locker Shop</h2>
+                        <p id="cardCostText" class="mt-2 text-sm font-black uppercase tracking-wide text-white"></p>
+                        <div id="cardChoices" class="mt-6 grid gap-3 sm:grid-cols-3"></div>
+                        <button id="skipCardBtn" class="arcade-btn mt-5 bg-slate-100 text-slate-950 hover:bg-white" type="button">Skip</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+                <div class="flex flex-wrap gap-2">
+                    <button id="startBtn" class="arcade-btn bg-emerald-600 text-white hover:bg-emerald-500">Start</button>
+                    <button id="pauseBtn" class="arcade-btn bg-sky-700 text-white hover:bg-sky-600">Pause</button>
+                    <button id="resetBtn" class="arcade-btn bg-slate-800 text-white hover:bg-slate-700">Reset</button>
+                </div>
+
+                <div class="flex items-center gap-2 sm:hidden">
+                    <button id="leftBtn" class="touch-btn">Left</button>
+                    <button id="fireBtn" class="touch-btn bg-orange-500 text-white">Throw</button>
+                    <button id="rightBtn" class="touch-btn">Right</button>
+                </div>
+
+                <p class="hidden text-sm font-semibold text-slate-700 sm:block">Move: WASD or arrows | Throw: Space | Pause: P</p>
+            </div>
+        </section>
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
