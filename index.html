@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hallway Dodgeball</title>
+    <link rel="icon" type="image/png" href="assets/player-dodgeball.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,10 +14,13 @@
 <body class="min-h-screen bg-[#f4f1e8] text-slate-900 antialiased">
     <main class="mx-auto flex min-h-screen w-full max-w-7xl flex-col items-center justify-center gap-4 px-4 py-5">
         <div class="flex w-full flex-col items-center justify-center gap-4 lg:flex-row">
-            <aside id="powerPanel" class="w-full shrink-0 self-center rounded-lg border-2 border-slate-800 bg-white/85 p-3 shadow-[5px_5px_0_rgba(15,23,42,0.18)] lg:w-56">
-                <h2 class="text-sm font-black uppercase tracking-[0.18em] text-slate-800">Power Ups</h2>
-                <div id="coinText" class="mt-2 rounded-lg border-2 border-amber-600 bg-amber-100 px-3 py-2 text-center text-sm font-black uppercase tracking-wide text-amber-900">Coins: 0</div>
-                <div id="powerList" class="mt-3 space-y-2"></div>
+            <aside class="left-widgets w-full shrink-0 self-center lg:w-80 lg:self-stretch">
+                <section id="characterPanel" class="side-widget"></section>
+                <section id="powerPanel" class="side-widget">
+                    <h2 class="text-sm font-black uppercase tracking-[0.18em] text-slate-800">Power Ups</h2>
+                    <div id="coinText" class="mt-2 rounded-lg border-2 border-amber-600 bg-amber-100 px-3 py-2 text-center text-sm font-black uppercase tracking-wide text-amber-900">Coins: 0</div>
+                    <div id="powerList" class="mt-3 space-y-2"></div>
+                </section>
             </aside>
 
         <section class="w-full max-w-[1100px]">
@@ -38,14 +42,15 @@
                 </div>
             </div>
 
-            <div class="relative overflow-hidden rounded-lg border-4 border-slate-800 bg-[#ead7a6] shadow-[0_18px_45px_rgba(15,23,42,0.22)]">
+            <div id="gameShell" class="relative overflow-hidden rounded-lg border-4 border-slate-800 bg-[#ead7a6] shadow-[0_18px_45px_rgba(15,23,42,0.22)]">
                 <canvas id="gameCanvas" width="1080" height="768" class="block aspect-[45/32] w-full"></canvas>
-                <div id="overlay" class="pointer-events-none absolute inset-0 flex items-center justify-center bg-slate-950/45 px-6 text-center">
+                <div id="overlay" class="absolute inset-0 hidden items-center justify-center bg-slate-950/60 px-6 text-center">
                     <div>
                         <p id="overlayTitle" class="text-3xl font-black uppercase tracking-wider text-white sm:text-5xl">Ready?</p>
                         <p id="overlayText" class="mt-3 max-w-xl text-sm leading-6 text-white sm:text-base">
                             Press Start. Move with WASD or arrows, then throw with Space when your cooldown is ready.
                         </p>
+                        <div id="overlayActions" class="mt-5 hidden flex-wrap justify-center gap-3"></div>
                     </div>
                 </div>
                 <div id="cardOverlay" class="absolute inset-0 hidden items-center justify-center bg-slate-950/70 px-5">
@@ -57,6 +62,33 @@
                         <button id="skipCardBtn" class="arcade-btn mt-5 bg-slate-100 text-slate-950 hover:bg-white" type="button">Skip</button>
                     </div>
                 </div>
+                <div id="menuOverlay" class="absolute inset-0 hidden items-center justify-center bg-slate-950/88 px-5">
+                    <div id="loadingView" class="menu-view text-center">
+                        <div class="loading-art"></div>
+                        <p class="mt-4 text-sm font-black uppercase tracking-[0.28em] text-amber-200">Loading</p>
+                        <h2 class="mt-2 text-4xl font-black uppercase text-white sm:text-6xl">STI Dodgeball</h2>
+                    </div>
+
+                    <div id="menuView" class="menu-view hidden w-full max-w-4xl"></div>
+
+                    <div id="storyView" class="menu-view hidden w-full max-w-3xl text-center">
+                        <p class="text-sm font-black uppercase tracking-[0.28em] text-amber-200">Adventure Mode</p>
+                        <h2 class="mt-2 text-4xl font-black uppercase text-white sm:text-6xl">After Class</h2>
+                        <div class="story-scene mt-6">
+                            <img src="assets/player1.png" alt="Khal Bo">
+                            <p>Khal Bo gets pushed around after class. Today, he walks back into the court and challenges the bullies one level at a time.</p>
+                        </div>
+                        <button id="skipStoryBtn" class="arcade-btn mt-5 bg-amber-300 text-slate-950 hover:bg-amber-200" type="button">Skip</button>
+                    </div>
+
+                    <div id="yellowSlipView" class="menu-view hidden w-full max-w-2xl text-center">
+                        <p class="text-sm font-black uppercase tracking-[0.28em] text-yellow-200">Yellow Slip</p>
+                        <h2 id="yellowSlipTitle" class="mt-2 text-4xl font-black uppercase text-white sm:text-6xl">Exam Check</h2>
+                        <div id="yellowSlipText" class="mx-auto mt-4 max-w-xl text-base font-bold leading-7 text-slate-100"></div>
+                        <button id="yellowSlipBtn" class="arcade-btn mt-3 bg-yellow-300 text-slate-950 hover:bg-yellow-200" type="button">Continue</button>
+                        <p id="yellowSlipMessage" class="mx-auto mt-3 max-w-xl text-base font-bold leading-7 text-slate-100"></p>
+                    </div>
+                </div>
             </div>
 
             <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
@@ -64,6 +96,7 @@
                     <button id="startBtn" class="arcade-btn bg-emerald-600 text-white hover:bg-emerald-500">Start</button>
                     <button id="pauseBtn" class="arcade-btn bg-sky-700 text-white hover:bg-sky-600">Pause</button>
                     <button id="resetBtn" class="arcade-btn bg-slate-800 text-white hover:bg-slate-700">Reset</button>
+                    <button id="mainMenuBtn" class="arcade-btn bg-amber-300 text-slate-950 hover:bg-amber-200">Main Menu</button>
                 </div>
 
                 <div class="flex items-center gap-2 sm:hidden">

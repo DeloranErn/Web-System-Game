@@ -69,10 +69,141 @@ body::before {
     color: rgb(15, 23, 42);
 }
 
+.left-widgets {
+    display: grid;
+    align-content: start;
+    gap: 0.9rem;
+}
+
+.side-widget {
+    width: 100%;
+    border: 2px solid rgb(15, 23, 42);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.85);
+    padding: 0.85rem;
+    box-shadow: 5px 5px 0 rgba(15, 23, 42, 0.18);
+}
+
+#characterPanel {
+    display: flex;
+    flex-direction: column;
+}
+
+.character-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.85rem;
+    flex: 1;
+    margin-top: 0.7rem;
+    min-height: 9.5rem;
+    border: 2px solid rgba(15, 23, 42, 0.18);
+    border-radius: 8px;
+    background: rgba(248, 250, 252, 0.92);
+    padding: 0.72rem;
+}
+
+.character-portrait {
+    display: grid;
+    width: min(100%, 13.5rem);
+    aspect-ratio: 1 / 1;
+    place-items: center;
+    border: 2px solid rgb(15, 23, 42);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.character-portrait.sprite-icon,
+.character-choice-portrait.sprite-icon {
+    background:
+        radial-gradient(circle at 68% 24%, rgba(255, 255, 255, 0.92), transparent 36%),
+        linear-gradient(135deg, rgb(232, 247, 239), rgb(230, 241, 249) 55%, rgb(246, 239, 222));
+}
+
+.character-portrait img {
+    width: 92%;
+    height: 92%;
+    object-fit: contain;
+    image-rendering: pixelated;
+}
+
+.character-details {
+    width: 100%;
+    text-align: center;
+}
+
+.character-name,
+.character-status,
+.character-stats,
+.character-kit {
+    display: block;
+    line-height: 1.12;
+}
+
+.character-name {
+    color: rgb(15, 23, 42);
+    font-size: 1rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+}
+
+.character-status {
+    margin-top: 0.18rem;
+    color: rgb(5, 150, 105);
+    font-size: 0.68rem;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.character-stats,
+.character-kit {
+    margin-top: 0.28rem;
+    color: rgb(51, 65, 85);
+    font-size: 0.68rem;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.character-kit {
+    color: rgb(120, 53, 15);
+}
+
+.character-bullets,
+.character-choice-stats {
+    display: grid;
+    gap: 0.08rem;
+    margin: 0.42rem 0 0;
+    padding: 0;
+    list-style: none;
+    color: rgb(51, 65, 85);
+    font-size: 0.68rem;
+    font-weight: 900;
+    line-height: 1.14;
+    text-transform: uppercase;
+}
+
+.character-bullets li:last-child,
+.character-choice-stats li:last-child {
+    color: rgb(120, 53, 15);
+}
+
+@media (min-width: 1024px) {
+    .left-widgets {
+        grid-template-rows: minmax(18rem, 42vh) auto;
+    }
+
+    #characterPanel {
+        max-height: 31rem;
+    }
+}
+
 #powerList {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.42rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.55rem;
 }
 
 #powerList > * {
@@ -84,24 +215,24 @@ body::before {
     grid-template-rows: auto 1fr auto;
     align-items: center;
     justify-items: center;
-    gap: 0.22rem;
-    min-height: 4.8rem;
+    gap: 0.3rem;
+    min-height: 6.25rem;
     border: 2px solid rgba(15, 23, 42, 0.18);
     border-radius: 8px;
     background: rgba(248, 250, 252, 0.9);
-    padding: 0.32rem;
+    padding: 0.45rem;
     text-align: center;
 }
 
 .power-icon {
     display: grid;
-    width: 1.75rem;
-    height: 1.75rem;
+    width: 2.8rem;
+    height: 2.8rem;
     place-items: center;
     border: 2px solid rgb(15, 23, 42);
-    border-radius: 999px;
+    border-radius: 8px;
     color: white;
-    font-size: 0.68rem;
+    font-size: 0.8rem;
     font-weight: 900;
     overflow: hidden;
 }
@@ -117,21 +248,40 @@ body::before {
     image-rendering: pixelated;
 }
 
+.upgrade-card-icon img {
+    width: calc(100% - 8px);
+    height: calc(100% - 8px);
+}
+
 .upgrade-slot {
     display: grid;
     gap: 0.65rem;
 }
 
 .upgrade-card {
-    min-height: 13rem;
+    display: grid;
+    grid-template-rows: auto auto 1fr auto;
+    justify-items: center;
+    min-height: 13.5rem;
     width: 100%;
     border: 3px solid rgb(15, 23, 42);
     border-radius: 8px;
     background: rgb(248, 250, 252);
-    padding: 1rem;
-    text-align: left;
+    padding: 1.05rem 0.9rem;
+    text-align: center;
     box-shadow: 6px 6px 0 rgba(15, 23, 42, 0.28);
     transition: transform 140ms ease, filter 140ms ease;
+}
+
+.upgrade-card.yellow-slip-card {
+    border-color: rgb(202, 138, 4);
+    background:
+        radial-gradient(circle at 50% 24%, rgba(250, 204, 21, 0.34), transparent 42%),
+        rgb(255, 251, 235);
+    box-shadow:
+        0 0 0 3px rgba(250, 204, 21, 0.32),
+        0 0 24px rgba(250, 204, 21, 0.52),
+        6px 6px 0 rgba(15, 23, 42, 0.24);
 }
 
 .reroll-btn {
@@ -164,10 +314,10 @@ body::before {
 
 .upgrade-card-icon {
     display: grid;
-    width: 40px;
-    height: 40px;
+    width: 80px;
+    height: 80px;
     place-items: center;
-    border: 3px solid rgb(15, 23, 42);
+    border: 2px solid rgb(15, 23, 42);
     border-radius: 8px;
     background: rgb(2, 6, 23);
     color: white;
@@ -176,24 +326,26 @@ body::before {
 }
 
 .upgrade-card-title {
-    margin-top: 0.8rem;
+    margin-top: 0.9rem;
     color: rgb(15, 23, 42);
-    font-size: 1rem;
+    font-size: 1.02rem;
     font-weight: 900;
     text-transform: uppercase;
+    line-height: 1.05;
 }
 
 .upgrade-card-text {
-    margin-top: 0.35rem;
+    margin-top: 0.45rem;
     color: rgb(51, 65, 85);
-    font-size: 0.82rem;
-    font-weight: 700;
-    line-height: 1.35;
+    font-size: 0.86rem;
+    font-weight: 800;
+    line-height: 1.42;
 }
 
 .upgrade-card-cost {
     display: inline-block;
-    margin-top: 0.8rem;
+    align-self: end;
+    margin-top: 0.9rem;
     border-radius: 999px;
     background: rgb(254, 243, 199);
     padding: 0.3rem 0.55rem;
@@ -206,25 +358,26 @@ body::before {
     display: block;
     max-width: 100%;
     color: rgb(15, 23, 42);
-    font-size: 0.58rem;
+    font-size: 0.66rem;
     font-weight: 900;
     text-transform: uppercase;
-    line-height: 1;
+    line-height: 1.08;
     overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
 }
 
 .power-amount {
     display: grid;
-    min-width: 1.25rem;
-    height: 1.25rem;
+    min-width: 2.1rem;
+    height: 1.35rem;
     place-items: center;
     border: 2px solid rgba(15, 23, 42, 0.8);
-    border-radius: 999px;
+    border-radius: 8px;
     background: white;
     color: rgb(15, 23, 42);
-    font-size: 0.66rem;
+    font-size: 0.72rem;
     font-weight: 900;
 }
 
@@ -244,6 +397,223 @@ body::before {
 .timer-ring::before {
     content: "";
     position: absolute;
+}
+
+.menu-view {
+    color: white;
+}
+
+#gameShell.menu-active {
+    background: rgb(15, 23, 42);
+}
+
+#gameShell.menu-active canvas {
+    visibility: hidden;
+}
+
+#gameShell.menu-active #menuOverlay {
+    background:
+        linear-gradient(rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.92)),
+        repeating-linear-gradient(0deg, rgba(248, 250, 252, 0.05), rgba(248, 250, 252, 0.05) 2px, transparent 2px, transparent 6px);
+}
+
+.loading-art {
+    width: min(72vw, 360px);
+    aspect-ratio: 16 / 9;
+    margin: 0 auto;
+    border: 4px solid rgb(248, 250, 252);
+    border-radius: 8px;
+    background:
+        linear-gradient(rgba(15, 23, 42, 0.68), rgba(15, 23, 42, 0.68)),
+        url("assets/loading-screen.png") center / cover no-repeat,
+        repeating-linear-gradient(135deg, rgb(15, 23, 42), rgb(15, 23, 42) 12px, rgb(30, 41, 59) 12px, rgb(30, 41, 59) 24px);
+    box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.35);
+}
+
+.menu-card,
+.character-choice {
+    display: grid;
+    gap: 0.35rem;
+    min-height: 6.8rem;
+    border: 3px solid rgb(248, 250, 252);
+    border-radius: 8px;
+    background: rgba(248, 250, 252, 0.12);
+    padding: 0.9rem;
+    color: white;
+    text-align: left;
+    cursor: pointer;
+    box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.28);
+}
+
+.character-choice {
+    justify-items: center;
+    min-height: 14rem;
+    text-align: center;
+}
+
+.menu-card.selected,
+.character-choice.selected {
+    border-color: rgb(251, 191, 36);
+    background: rgba(251, 191, 36, 0.18);
+}
+
+.menu-card:disabled,
+.character-choice:disabled {
+    cursor: not-allowed;
+    filter: grayscale(0.8) brightness(0.68);
+}
+
+.menu-card span,
+.character-choice span {
+    font-size: 1.15rem;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.menu-card small,
+.character-choice small {
+    color: rgb(226, 232, 240);
+    font-size: 0.78rem;
+    font-weight: 500;
+    line-height: 1.35;
+}
+
+.character-choice-portrait {
+    display: grid;
+    width: min(100%, 7.2rem);
+    aspect-ratio: 1 / 1;
+    place-items: center;
+    border: 2px solid rgb(248, 250, 252);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.character-choice-portrait img {
+    width: 94%;
+    height: 94%;
+    object-fit: contain;
+    image-rendering: pixelated;
+}
+
+.character-choice-stats {
+    color: rgb(226, 232, 240);
+    font-size: 0.75rem;
+}
+
+.character-choice-stats li:last-child {
+    color: rgb(253, 230, 138);
+}
+
+.story-scene {
+    display: grid;
+    gap: 1rem;
+    justify-items: center;
+    border: 3px solid rgba(248, 250, 252, 0.8);
+    border-radius: 8px;
+    background: rgba(15, 23, 42, 0.58);
+    padding: 1.2rem;
+}
+
+.story-scene img {
+    width: 72px;
+    height: 72px;
+    object-fit: contain;
+    image-rendering: pixelated;
+}
+
+.story-scene p {
+    max-width: 34rem;
+    color: rgb(241, 245, 249);
+    font-size: 1rem;
+    font-weight: 800;
+    line-height: 1.65;
+}
+
+.main-menu-panel {
+    border: 3px solid rgba(248, 250, 252, 0.82);
+    border-radius: 8px;
+    background: rgba(15, 23, 42, 0.64);
+    padding: clamp(1rem, 4vw, 2rem);
+    box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.34);
+}
+
+.yellow-slip-paper {
+    display: block;
+    width: min(87vw, 414px);
+    height: auto;
+    margin: 0 auto;
+    object-fit: contain;
+    image-rendering: pixelated;
+    filter: drop-shadow(8px 8px 0 rgba(0, 0, 0, 0.28));
+}
+
+.yellow-slip-stage {
+    position: relative;
+    display: grid;
+    place-items: center;
+    padding: 0.25rem 0;
+}
+
+.yellow-slip-paper-wrap {
+    position: relative;
+    z-index: 1;
+    display: block;
+}
+
+.yellow-slip-paper-wrap.is-signing {
+    animation: yellow-slip-shake 90ms steps(2, end) infinite;
+}
+
+.yellow-slip-paper-wrap.is-revealing {
+    animation: yellow-slip-pop 420ms cubic-bezier(0.2, 1.15, 0.35, 1);
+}
+
+.yellow-slip-burst {
+    position: absolute;
+    z-index: 0;
+    width: min(70vw, 430px);
+    aspect-ratio: 1 / 1;
+    border-radius: 999px;
+    opacity: 0;
+    transform: scale(0.25);
+    pointer-events: none;
+}
+
+.yellow-slip-stage.passed .yellow-slip-burst,
+.yellow-slip-stage.failed .yellow-slip-burst {
+    animation: yellow-slip-burst 560ms ease-out both;
+}
+
+.yellow-slip-stage.passed .yellow-slip-burst {
+    background:
+        radial-gradient(circle, rgba(59, 130, 246, 0.72) 0 18%, rgba(59, 130, 246, 0.2) 19% 34%, transparent 35%),
+        conic-gradient(from 8deg, transparent 0 10deg, rgba(147, 197, 253, 0.95) 11deg 20deg, transparent 21deg 42deg);
+}
+
+.yellow-slip-stage.failed .yellow-slip-burst {
+    background:
+        radial-gradient(circle, rgba(239, 68, 68, 0.72) 0 18%, rgba(239, 68, 68, 0.2) 19% 34%, transparent 35%),
+        conic-gradient(from 8deg, transparent 0 10deg, rgba(248, 113, 113, 0.95) 11deg 20deg, transparent 21deg 42deg);
+}
+
+@keyframes yellow-slip-shake {
+    0% { transform: translate(0, 0) rotate(0deg); }
+    25% { transform: translate(-5px, 2px) rotate(-1deg); }
+    50% { transform: translate(5px, -2px) rotate(1deg); }
+    75% { transform: translate(-3px, -2px) rotate(-1deg); }
+    100% { transform: translate(3px, 2px) rotate(1deg); }
+}
+
+@keyframes yellow-slip-pop {
+    0% { transform: scale(0.86); filter: brightness(1.35); }
+    65% { transform: scale(1.05); filter: brightness(1.12); }
+    100% { transform: scale(1); filter: brightness(1); }
+}
+
+@keyframes yellow-slip-burst {
+    0% { opacity: 0.95; transform: scale(0.18) rotate(0deg); }
+    70% { opacity: 0.72; transform: scale(1.08) rotate(22deg); }
+    100% { opacity: 0; transform: scale(1.28) rotate(34deg); }
 }
 
 .arcade-btn:hover,

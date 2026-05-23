@@ -8,15 +8,29 @@ const cooldownText = document.getElementById("cooldownText");
 const overlay = document.getElementById("overlay");
 const overlayTitle = document.getElementById("overlayTitle");
 const overlayText = document.getElementById("overlayText");
+const overlayActions = document.getElementById("overlayActions");
 const powerList = document.getElementById("powerList");
+const characterPanel = document.getElementById("characterPanel");
 const coinText = document.getElementById("coinText");
 const cardOverlay = document.getElementById("cardOverlay");
 const cardChoices = document.getElementById("cardChoices");
 const cardCostText = document.getElementById("cardCostText");
 const skipCardBtn = document.getElementById("skipCardBtn");
+const menuOverlay = document.getElementById("menuOverlay");
+const gameShell = document.getElementById("gameShell");
+const loadingView = document.getElementById("loadingView");
+const menuView = document.getElementById("menuView");
+const storyView = document.getElementById("storyView");
+const yellowSlipView = document.getElementById("yellowSlipView");
+const yellowSlipTitle = document.getElementById("yellowSlipTitle");
+const yellowSlipText = document.getElementById("yellowSlipText");
+const yellowSlipBtn = document.getElementById("yellowSlipBtn");
+const yellowSlipMessage = document.getElementById("yellowSlipMessage");
+const skipStoryBtn = document.getElementById("skipStoryBtn");
 const startBtn = document.getElementById("startBtn");
 const pauseBtn = document.getElementById("pauseBtn");
 const resetBtn = document.getElementById("resetBtn");
+const mainMenuBtn = document.getElementById("mainMenuBtn");
 const leftBtn = document.getElementById("leftBtn");
 const rightBtn = document.getElementById("rightBtn");
 const fireBtn = document.getElementById("fireBtn");
@@ -24,22 +38,56 @@ const fireBtn = document.getElementById("fireBtn");
 // Add your own PNGs to these paths when you are ready.
 // The *Throw images are optional one-frame throw poses.
 const spriteSources = {
+    classroom: "assets/classroom.png",
+    field: "assets/field.png",
+    player1: "assets/player1.png",
+    player1Throw: "assets/player1-throw.png",
+    player1Pe: "assets/player1-pe.png",
+    player1PeThrow: "assets/player1-pe-throw.png",
     player: "assets/player.png",
     playerThrow: "assets/player-throw.png",
     playerPe: "assets/player-pe.png",
     playerPeThrow: "assets/player-pe-throw.png",
+    player2: "assets/player2.png",
+    player2Throw: "assets/player2-throw.png",
+    player2Pe: "assets/player2-pe.png",
+    player2PeThrow: "assets/player2-pe-throw.png",
+    player3: "assets/player3.png",
+    player3Throw: "assets/player3-throw.png",
+    player3Pe: "assets/player3-pe.png",
+    player3PeThrow: "assets/player3-pe-throw.png",
+    companion: "assets/companion.png",
+    companionThrow: "assets/companion-throw.png",
     enemyRed: "assets/student-red.png",
     enemyRedThrow: "assets/student-red-throw.png",
     enemyBlue: "assets/student-blue.png",
     enemyBlueThrow: "assets/student-blue-throw.png",
     teacher: "assets/teacher.png",
     teacherThrow: "assets/teacher-throw.png",
+    teacherThrowMuzzle: "assets/teacher-throw-muzzle.png",
     ball: "assets/dodgeball.png",
     ball2: "assets/dodgeball2.png",
     dodgeball: "assets/player-dodgeball.png",
+    dodgeballBuffIcon: "assets/dodgeball-buff-icon.png",
+    volleyballBuffIcon: "assets/volleyball-buff-icon.png",
+    soccerballBuffIcon: "assets/soccerball-buff-icon.png",
+    siomaiRiceBuffIcon: "assets/siomairice-buff-icon.png",
+    icedCoffeeBuffIcon: "assets/icedcoffee-buff-icon.png",
+    peUniformBuffIcon: "assets/peuniform-buff-icon.png",
+    throwSpeedBuffIcon: "assets/throwspeed-buff-icon.png",
+    projectileSpeedBuffIcon: "assets/projectilespeed-buff-icon.png",
+    movementSpeedBuffIcon: "assets/movespeed-buff-icon.png",
+    playerDodgeBuffIcon: "assets/playerdodge-buff-icon.png",
+    yellowSlipBuffIcon: "assets/yellow-slip-buff-icon.png",
+    yellowSlipBase: "assets/yellow-slip-base.png",
+    yellowSlipPassed: "assets/yellow-slip-passed.png",
+    yellowSlipFailed: "assets/yellow-slip-failed.png",
+    slowed: "assets/slowed.png",
     chalk: "assets/chalk.png",
     barrier: "assets/barrier.png",
     coin: "assets/coin.png",
+    coinIcon: "assets/coin-icon.png",
+    coffeeBeanIcon: "assets/coffee-bean-icon.png",
     siomaiRice: "assets/siomai-rice.png",
     icedCoffee: "assets/iced-coffee.png",
     icedCoffeeIndicator: "assets/iced-coffee-indicator.png",
@@ -53,7 +101,7 @@ const LEVEL_SPEED_SCALE = 0.035;
 const TEACHER_HP_BY_APPEARANCE = [3, 5, 8, 12, 15];
 const POWER_UP_CHANCE = 0.15;
 const ROUND_TRANSITION_MS = 1800;
-const BOSS_NAME = "Ms. Placeholder";
+const BOSS_NAME = "Tung Tung Tung Sahur";
 const BOSS_IFRAME_MS = 400;
 const BOSS_CHALK_ATTACK_MS = 3000;
 const BASE_PLAYER_HEALTH = 3;
@@ -65,10 +113,30 @@ const ENEMY_THROW_PRESSURE_MULTIPLIER = 1.10;
 const ENEMY_RANDOM_AIM_CHANCE = 0.24;
 const ENEMY_PREDICTIVE_AIM_CHANCE = 0.34;
 const SIDELINE_THROW_INTERVAL_MS = 7000;
+const TEACHER_THROW_ANIMATION_MS = 260;
+const TEACHER_THROW_FRAME_MS = TEACHER_THROW_ANIMATION_MS / 2;
+const FIELD_X = 85;
+const FIELD_Y = 28;
+const FIELD_WIDTH = canvas.width - FIELD_X * 2;
+const FIELD_HEIGHT = canvas.height - FIELD_Y * 2;
+const PLAYER_RENDER_SIZE = 54;
+const ENEMY_RENDER_SIZE = PLAYER_RENDER_SIZE;
+const TEACHER_RENDER_WIDTH = 118;
+const TEACHER_RENDER_HEIGHT = 124;
+const TEACHER_VERTICAL_SPEED_MULTIPLIER = 0.35;
+const PLAYER_SLOW_MS = 2500;
+const PLAYER_SLOW_STRENGTH = 0.70;
+const YELLOW_SLIP_SIGN_REVEAL_MS = 720;
+const COMPANION_THROW_INTERVAL_MS = 8000;
+const COMPANION_BASE_HP = 7;
+const COMPANION_DODGE_CHANCE = 0.30;
+const UNLOCK_STORAGE_KEY = "stiDodgeballUnlocks";
 const SHOP_REROLL_COST = 2;
 const SHOP_NEW_BUFF_LIMIT = 3;
+const FIRST_SHOP_FREE_CARD_LIMIT = 2;
 const MAX_NEW_BUFF_STACKS = 4;
 const MAX_BALL_BUFF_STACKS = 4;
+const MAX_SOCCERBALL_BUFF_STACKS = 2;
 const POWER_UP_TYPES = {
     SIOMAI: "siomaiRice",
     COFFEE: "icedCoffee",
@@ -76,6 +144,7 @@ const POWER_UP_TYPES = {
     VOLLEYBALL: "volleyball",
     SOCCERBALL: "soccerball",
     PE_UNIFORM: "peUniform",
+    YELLOW_SLIP: "yellowSlip",
     THROW_SPEED: "throwSpeed",
     PROJECTILE_SPEED: "projectileSpeed",
     MOVEMENT_SPEED: "movementSpeed",
@@ -88,6 +157,12 @@ const BALL_POWER_TYPES = [
     POWER_UP_TYPES.SOCCERBALL
 ];
 
+const SHOP_POWER_WEIGHTS = {
+    [POWER_UP_TYPES.DODGEBALL]: 1.05,
+    [POWER_UP_TYPES.VOLLEYBALL]: 1.05,
+    [POWER_UP_TYPES.SOCCERBALL]: 0.90
+};
+
 const SHOP_NEW_POWER_TYPES = [
     POWER_UP_TYPES.THROW_SPEED,
     POWER_UP_TYPES.PROJECTILE_SPEED,
@@ -98,10 +173,12 @@ const SHOP_NEW_POWER_TYPES = [
 const SHOP_MIXED_POWER_TYPES = [
     ...BALL_POWER_TYPES,
     ...SHOP_NEW_POWER_TYPES,
-    POWER_UP_TYPES.PE_UNIFORM
+    POWER_UP_TYPES.PE_UNIFORM,
+    POWER_UP_TYPES.YELLOW_SLIP
 ];
 
 const sprites = {};
+const spriteShadowAnchors = new WeakMap();
 
 Object.entries(spriteSources).forEach(([name, src]) => {
     const image = new Image();
@@ -109,8 +186,136 @@ Object.entries(spriteSources).forEach(([name, src]) => {
     sprites[name] = image;
 });
 
+function loadUnlocks() {
+    const defaults = {
+        companion: false,
+        yellowSlip: false,
+        player2: false,
+        bossDamagePlus2: false,
+        player3: false
+    };
+
+    try {
+        return {
+            ...defaults,
+            ...JSON.parse(localStorage.getItem(UNLOCK_STORAGE_KEY) || "{}")
+        };
+    } catch {
+        return defaults;
+    }
+}
+
+function saveUnlocks() {
+    localStorage.setItem(UNLOCK_STORAGE_KEY, JSON.stringify(state.unlocks));
+}
+
+function getCharacterConfig(characterId) {
+    const configs = {
+        player1: {
+            id: "player1",
+            name: "Khal Bo",
+            unlocked: true,
+            base: "player1",
+            throw: "player1Throw",
+            pe: "player1Pe",
+            peThrow: "player1PeThrow",
+            shirt: "#2563eb",
+            statMultiplier: 1,
+            baseHpBonus: 0
+        },
+        player2: {
+            id: "player2",
+            name: "Lebron Games",
+            unlocked: state.unlocks.player2,
+            base: "player2",
+            throw: "player2Throw",
+            pe: "player2Pe",
+            peThrow: "player2PeThrow",
+            shirt: "#0f766e",
+            statMultiplier: 1.03,
+            baseHpBonus: 1,
+            starterPowerUps: [POWER_UP_TYPES.VOLLEYBALL, POWER_UP_TYPES.COFFEE]
+        },
+        player3: {
+            id: "player3",
+            name: "Satire O. Gojo",
+            unlocked: state.unlocks.player3,
+            base: "player3",
+            throw: "player3Throw",
+            pe: "player3Pe",
+            peThrow: "player3PeThrow",
+            shirt: "#7c3aed",
+            statMultiplier: 1.05,
+            baseHpBonus: 2,
+            starterPowerUps: [POWER_UP_TYPES.DODGEBALL, POWER_UP_TYPES.COFFEE]
+        }
+    };
+
+    return configs[characterId] || configs.player1;
+}
+
+function getCharacterStatMultiplier() {
+    return getCharacterConfig(state.selectedCharacter).statMultiplier || 1;
+}
+
+function getCharacterStatText(character, statBonus = Math.round(((character.statMultiplier || 1) - 1) * 100)) {
+    if (character.id === "player1") return `Base: ${BASE_PLAYER_HEALTH}HP`;
+    return `${BASE_PLAYER_HEALTH + (character.baseHpBonus || 0)} HP${statBonus > 0 ? ` / +${statBonus}% stats` : ""}`;
+}
+
+function getCharacterStatBullets(character, statBonus = Math.round(((character.statMultiplier || 1) - 1) * 100)) {
+    const bullets = [];
+
+    if (character.id === "player1") {
+        bullets.push(`Base: ${BASE_PLAYER_HEALTH}HP`);
+    } else {
+        bullets.push(`${BASE_PLAYER_HEALTH + (character.baseHpBonus || 0)} HP`);
+        if (statBonus > 0) bullets.push(`${statBonus}% stats`);
+    }
+
+    if (character.starterPowerUps?.length) {
+        character.starterPowerUps.forEach((type) => bullets.push(getPowerUpName(type)));
+    } else {
+        bullets.push("Base kit");
+    }
+
+    return bullets;
+}
+
+function getCharacterStatBulletMarkup(character, className = "character-bullets") {
+    return `
+        <ul class="${className}">
+            ${getCharacterStatBullets(character).map((bullet) => `<li>+ ${bullet}</li>`).join("")}
+        </ul>
+    `;
+}
+
+function applyCharacterStarterUpgrades() {
+    const character = getCharacterConfig(state.selectedCharacter);
+    (character.starterPowerUps || []).forEach((type) => {
+        if (type === POWER_UP_TYPES.COFFEE) {
+            state.playerUpgrades.coffeeRounds = 2;
+        }
+        if (type === POWER_UP_TYPES.VOLLEYBALL) {
+            state.playerUpgrades.volleyballBounce = true;
+            state.playerUpgrades.volleyballStacks = Math.max(1, state.playerUpgrades.volleyballStacks);
+            state.playerUpgrades.latestBallColor = "#facc15";
+        }
+        if (type === POWER_UP_TYPES.DODGEBALL) {
+            state.playerUpgrades.dodgeballStacks = Math.max(1, state.playerUpgrades.dodgeballStacks);
+            state.playerUpgrades.latestBallColor = "#dc2626";
+        }
+    });
+}
+
 const state = {
-    status: "ready",
+    status: "loading",
+    gameMode: "endless",
+    menuPhase: "home",
+    selectedMode: "endless",
+    adventureDifficulty: "easy",
+    selectedCharacter: "player1",
+    unlocks: loadUnlocks(),
     score: 0,
     coins: 0,
     round: 1,
@@ -118,9 +323,13 @@ const state = {
     health: BASE_PLAYER_HEALTH,
     lastTime: 0,
     throwCooldown: 0,
+    playerSlowTimer: 0,
     bossChalkTimer: BOSS_CHALK_ATTACK_MS,
     bossChalkShots: 0,
     bossChalkShotTimer: 0,
+    yellowSlipPassed: false,
+    yellowSlipPhase: "idle",
+    yellowSlipReason: "",
     transitionTimer: 0,
     transitionTitle: "",
     transitionSubtitle: "",
@@ -135,10 +344,13 @@ const state = {
     powerUps: [],
     students: [],
     sidelineEnemies: [],
+    companion: null,
     particles: [],
+    floatTexts: [],
     shopCards: [],
     shopRerolledSlots: [],
     shopBoughtBall: false,
+    shopBoughtCards: 0,
     shopBoughtNewBuffs: 0,
     playerUpgrades: {
         latestBallColor: "#f97316",
@@ -148,6 +360,7 @@ const state = {
         soccerStacks: 0,
         coffeeRounds: 0,
         peUniformStacks: 0,
+        yellowSlipStacks: 0,
         siomaiShieldRounds: 0,
         throwSpeedStacks: 0,
         projectileSpeedStacks: 0,
@@ -164,12 +377,12 @@ const keys = {
 };
 
 const player = {
-    x: canvas.width / 2 - 22.5,
+    x: canvas.width / 2 - PLAYER_RENDER_SIZE / 2,
     y: canvas.height - 106,
-    width: 45,
-    height: 56,
-    hitboxPad: 10,
-    speed: 340,
+    width: PLAYER_RENDER_SIZE,
+    height: PLAYER_RENDER_SIZE,
+    hitboxPad: -7,
+    speed: 289,
     throwPose: 0
 };
 
@@ -179,6 +392,72 @@ function clamp(value, min, max) {
 
 function hasSprite(image) {
     return image && image.complete && image.naturalWidth > 0;
+}
+
+function firstLoadedSprite(...names) {
+    for (const name of names) {
+        if (hasSprite(sprites[name])) return sprites[name];
+    }
+    return null;
+}
+
+function getSpriteRightFootAnchor(sprite) {
+    if (spriteShadowAnchors.has(sprite)) return spriteShadowAnchors.get(sprite);
+
+    const fallback = { xRatio: 0.36, yRatio: 0.96 };
+
+    try {
+        const width = sprite.naturalWidth;
+        const height = sprite.naturalHeight;
+        const offscreen = document.createElement("canvas");
+        offscreen.width = width;
+        offscreen.height = height;
+        const offscreenCtx = offscreen.getContext("2d");
+        offscreenCtx.drawImage(sprite, 0, 0);
+        const pixels = offscreenCtx.getImageData(0, 0, width, height).data;
+        const footScanY = Math.floor(height * 0.64);
+        let bottomY = -1;
+
+        for (let y = footScanY; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                const alpha = pixels[(y * width + x) * 4 + 3];
+                if (alpha > 24) bottomY = y;
+            }
+        }
+
+        if (bottomY < 0) {
+            spriteShadowAnchors.set(sprite, fallback);
+            return fallback;
+        }
+
+        const bandTop = Math.max(footScanY, bottomY - Math.max(2, Math.ceil(height * 0.14)));
+        let footX = width;
+        let weightedX = 0;
+        let pixelCount = 0;
+
+        for (let y = bandTop; y <= bottomY; y++) {
+            for (let x = 0; x < width; x++) {
+                const alpha = pixels[(y * width + x) * 4 + 3];
+                if (alpha > 24) {
+                    footX = Math.min(footX, x);
+                    weightedX += x;
+                    pixelCount++;
+                }
+            }
+        }
+
+        const averageX = pixelCount ? weightedX / pixelCount : width * fallback.xRatio;
+        const anchorX = footX < width ? (footX * 0.68 + averageX * 0.32) : width * fallback.xRatio;
+        const anchor = {
+            xRatio: clamp(anchorX / width, 0.14, 0.54),
+            yRatio: clamp(bottomY / height, 0.84, 0.995)
+        };
+        spriteShadowAnchors.set(sprite, anchor);
+        return anchor;
+    } catch {
+        spriteShadowAnchors.set(sprite, fallback);
+        return fallback;
+    }
 }
 
 function hitbox(entity) {
@@ -266,6 +545,14 @@ function getStudentDodgeChance() {
     return state.round <= 10 ? 0.10 : 0.12;
 }
 
+function canStudentDodge(student) {
+    const playLeft = 85;
+    const playRight = canvas.width - 85;
+    const safeMargin = (playRight - playLeft) * 0.15;
+    const centerX = student.x + student.width / 2;
+    return centerX > playLeft + safeMargin && centerX < playRight - safeMargin;
+}
+
 function getEffectivePlayerHealth() {
     return state.health +
         state.playerUpgrades.peUniformStacks +
@@ -284,6 +571,26 @@ function getBoss() {
     return state.students.find((student) => student.active && student.type === "teacher");
 }
 
+function getAdventureLimit() {
+    return state.adventureDifficulty === "hard" ? 30 : 20;
+}
+
+function getModeLabel() {
+    if (state.gameMode !== "adventure") return "Endless";
+    return state.adventureDifficulty === "hard" ? "Adventure Hard" : "Adventure Easy";
+}
+
+function isAdventureComplete() {
+    return state.gameMode === "adventure" && state.completedLevels >= getAdventureLimit();
+}
+
+function getAvailableShopPoolForSlot(slotIndex) {
+    return getShopPoolForSlot(slotIndex).filter((type) => {
+        if (type === POWER_UP_TYPES.YELLOW_SLIP) return state.unlocks.yellowSlip;
+        return true;
+    });
+}
+
 function startRoundTransition() {
     state.status = "transition";
     state.transitionTimer = isBossRound() ? 2600 : ROUND_TRANSITION_MS;
@@ -295,36 +602,53 @@ function startRoundTransition() {
 }
 
 function getPlayerSpeed() {
+    const characterMultiplier = getCharacterStatMultiplier();
     const coffeeBonus = state.playerUpgrades.coffeeRounds > 0 ? 1.15 : 1;
     const uniformBonus = 1 + state.playerUpgrades.peUniformStacks * 0.15;
     const speedBonus = 1 + state.playerUpgrades.movementSpeedStacks * 0.06;
-    return player.speed * coffeeBonus * uniformBonus * speedBonus;
+    const slowPenalty = state.playerSlowTimer > 0
+        ? 1 - PLAYER_SLOW_STRENGTH * clamp(state.playerSlowTimer / PLAYER_SLOW_MS, 0, 1)
+        : 1;
+    return player.speed * characterMultiplier * coffeeBonus * uniformBonus * speedBonus * slowPenalty;
 }
 
 function getThrowCooldown() {
+    const characterMultiplier = getCharacterStatMultiplier();
     const baseCooldown = Math.max(900, 1600 - state.round * 90);
     const coffeeMultiplier = state.playerUpgrades.coffeeRounds > 0 ? 0.70 : 1;
     const uniformMultiplier = 1 / (1 + state.playerUpgrades.peUniformStacks * 0.15);
     const agilityMultiplier = Math.max(0.55, 1 - state.playerUpgrades.throwSpeedStacks * 0.07);
-    return baseCooldown * coffeeMultiplier * uniformMultiplier * agilityMultiplier;
+    const ballStacks = state.playerUpgrades.dodgeballStacks +
+        state.playerUpgrades.volleyballStacks +
+        state.playerUpgrades.soccerStacks;
+    const lateBallBurden = state.round >= 25 ? ballStacks * 0.03 : 0;
+    const ballBurdenMultiplier = 1 +
+        (state.playerUpgrades.dodgeballStacks + state.playerUpgrades.soccerStacks) * 0.05 +
+        lateBallBurden;
+    return baseCooldown * coffeeMultiplier * uniformMultiplier * agilityMultiplier * ballBurdenMultiplier / characterMultiplier;
 }
 
 function getPlayerProjectileSpeed() {
-    return 520 * (1 + state.playerUpgrades.projectileSpeedStacks * 0.08);
+    const characterMultiplier = getCharacterStatMultiplier();
+    const speedBonus = 1 + state.playerUpgrades.projectileSpeedStacks * 0.08;
+    const ballBurdenPenalty = Math.max(0.55, 1 - (state.playerUpgrades.dodgeballStacks + state.playerUpgrades.soccerStacks) * 0.05);
+    return 520 * characterMultiplier * speedBonus * ballBurdenPenalty;
 }
 
 function getPlayerProjectileDodgeChance() {
-    return Math.min(0.65, state.playerUpgrades.dodgeChanceStacks * 0.07);
+    const characterDodgeBonus = getCharacterStatMultiplier() - 1;
+    return Math.min(0.65, characterDodgeBonus + state.playerUpgrades.dodgeChanceStacks * 0.07);
 }
 
 function getTeacherHp() {
     const bossNumber = Math.floor(state.round / 5);
     const listedHp = TEACHER_HP_BY_APPEARANCE[bossNumber - 1];
+    const endlessBonus = state.gameMode === "endless" && state.round >= 25 ? 5 : 0;
 
-    if (listedHp) return listedHp + 6;
+    if (listedHp) return listedHp + 6 + endlessBonus;
 
     const lastListedHp = TEACHER_HP_BY_APPEARANCE[TEACHER_HP_BY_APPEARANCE.length - 1];
-    return lastListedHp + 6 + (bossNumber - TEACHER_HP_BY_APPEARANCE.length) * 4;
+    return lastListedHp + 6 + endlessBonus + (bossNumber - TEACHER_HP_BY_APPEARANCE.length) * 4;
 }
 
 function randomPowerUpPosition() {
@@ -362,13 +686,14 @@ function spawnRoundPowerUps() {
 }
 
 function canApplyPowerUp(type) {
+    if (type === POWER_UP_TYPES.YELLOW_SLIP) return state.unlocks.yellowSlip && state.playerUpgrades.yellowSlipStacks < 1;
     if (type === POWER_UP_TYPES.THROW_SPEED) return state.playerUpgrades.throwSpeedStacks < MAX_NEW_BUFF_STACKS;
     if (type === POWER_UP_TYPES.PROJECTILE_SPEED) return state.playerUpgrades.projectileSpeedStacks < MAX_NEW_BUFF_STACKS;
     if (type === POWER_UP_TYPES.MOVEMENT_SPEED) return state.playerUpgrades.movementSpeedStacks < MAX_NEW_BUFF_STACKS;
     if (type === POWER_UP_TYPES.DODGE_CHANCE) return state.playerUpgrades.dodgeChanceStacks < MAX_NEW_BUFF_STACKS;
     if (type === POWER_UP_TYPES.DODGEBALL) return state.playerUpgrades.dodgeballStacks < MAX_BALL_BUFF_STACKS;
     if (type === POWER_UP_TYPES.VOLLEYBALL) return state.playerUpgrades.volleyballStacks < MAX_BALL_BUFF_STACKS;
-    if (type === POWER_UP_TYPES.SOCCERBALL) return state.playerUpgrades.soccerStacks < MAX_BALL_BUFF_STACKS;
+    if (type === POWER_UP_TYPES.SOCCERBALL) return state.playerUpgrades.soccerStacks < MAX_SOCCERBALL_BUFF_STACKS;
     return true;
 }
 
@@ -391,9 +716,21 @@ function getShopPoolForSlot(slotIndex) {
 }
 
 function pickShopPower(slotIndex, currentType = "") {
-    let pool = getShopPoolForSlot(slotIndex).filter((type) => type !== currentType && canApplyPowerUp(type));
-    if (!pool.length) pool = getShopPoolForSlot(slotIndex).filter((type) => type !== currentType);
-    return pool[Math.floor(Math.random() * pool.length)];
+    let pool = getAvailableShopPoolForSlot(slotIndex).filter((type) => type !== currentType && canApplyPowerUp(type));
+    if (!pool.length) pool = getAvailableShopPoolForSlot(slotIndex).filter((type) => type !== currentType);
+    return pickWeightedShopPower(pool);
+}
+
+function pickWeightedShopPower(pool) {
+    const totalWeight = pool.reduce((total, type) => total + (SHOP_POWER_WEIGHTS[type] || 1), 0);
+    let roll = Math.random() * totalWeight;
+
+    for (const type of pool) {
+        roll -= SHOP_POWER_WEIGHTS[type] || 1;
+        if (roll <= 0) return type;
+    }
+
+    return pool[pool.length - 1];
 }
 
 function makeShopCard(type) {
@@ -440,6 +777,11 @@ function applyPowerUp(type) {
         burst(player.x + player.width / 2, player.y + player.height / 2, "#0ea5e9");
     }
 
+    if (type === POWER_UP_TYPES.YELLOW_SLIP) {
+        state.playerUpgrades.yellowSlipStacks = 1;
+        burst(player.x + player.width / 2, player.y + player.height / 2, "#facc15");
+    }
+
     if (type === POWER_UP_TYPES.THROW_SPEED) {
         state.playerUpgrades.throwSpeedStacks++;
         burst(player.x + player.width / 2, player.y + player.height / 2, "#a3e635");
@@ -481,7 +823,7 @@ function getPowerUpDetails(type) {
     if (type === POWER_UP_TYPES.SOCCERBALL) {
         return {
             title: "Soccerball",
-            description: "Adds another delayed follow-up ball."
+            description: "Adds a delayed follow-up ball. Max 2."
         };
     }
     if (type === POWER_UP_TYPES.THROW_SPEED) {
@@ -514,6 +856,12 @@ function getPowerUpDetails(type) {
             description: "Armor, speed, and throw rate."
         };
     }
+    if (type === POWER_UP_TYPES.YELLOW_SLIP) {
+        return {
+            title: "Yellow Slip",
+            description: "50% revive on knockout."
+        };
+    }
     return {
         title: getPowerUpName(type),
         description: ""
@@ -524,6 +872,8 @@ function showCardChoices() {
     if (!cardOverlay || !cardChoices) return;
 
     state.status = "card";
+    hideOverlay();
+    hideMenuOverlay();
     state.cardSelectionsShown++;
     
     // Generate shop cards while ensuring no duplicates
@@ -539,6 +889,7 @@ function showCardChoices() {
     
     state.shopRerolledSlots = [false, false, false];
     state.shopBoughtBall = false;
+    state.shopBoughtCards = 0;
     state.shopBoughtNewBuffs = 0;
     cardOverlay.classList.remove("hidden");
     cardOverlay.classList.add("flex");
@@ -563,6 +914,7 @@ function getRerollCost() {
 function canBuyShopCard(card) {
     if (!card || card.bought || !canApplyPowerUp(card.type)) return false;
     if (state.coins < card.cost) return false;
+    if (state.cardSelectionsShown === 1 && state.shopBoughtCards >= FIRST_SHOP_FREE_CARD_LIMIT) return false;
     if (isBallShopPower(card.type) && state.shopBoughtBall) return false;
     if (isNewShopPower(card.type) && state.shopBoughtNewBuffs >= SHOP_NEW_BUFF_LIMIT) return false;
     return true;
@@ -574,7 +926,7 @@ function renderShopCards() {
     const rerollCost = getRerollCost();
     if (cardCostText) {
         cardCostText.textContent = state.cardSelectionsShown === 1
-            ? `First shop: free rerolls | Coins: ${state.coins}`
+            ? `First shop: pick ${FIRST_SHOP_FREE_CARD_LIMIT} free cards max | Coins: ${state.coins}`
             : `Reroll: ${SHOP_REROLL_COST} coins | Coins: ${state.coins}`;
     }
 
@@ -588,7 +940,7 @@ function renderShopCards() {
 
         return `
             <div class="upgrade-slot">
-                <button class="upgrade-card" data-power="${card.type}" data-slot="${slotIndex}" type="button" ${disabled ? "disabled" : ""}>
+                <button class="upgrade-card ${card.type === POWER_UP_TYPES.YELLOW_SLIP ? "yellow-slip-card" : ""}" data-power="${card.type}" data-slot="${slotIndex}" type="button" ${disabled ? "disabled" : ""}>
                     ${getPowerUpIconMarkup(card.type, "upgrade-card-icon")}
                     <span class="upgrade-card-title">${card.title}</span>
                     <span class="upgrade-card-text">${card.description}</span>
@@ -639,6 +991,7 @@ function buyShopCard(slotIndex) {
     }
 
     if (isBallShopPower(card.type)) state.shopBoughtBall = true;
+    state.shopBoughtCards++;
     if (isNewShopPower(card.type)) state.shopBoughtNewBuffs++;
     card.bought = true;
     syncHud();
@@ -663,9 +1016,9 @@ function createStudents() {
         state.students.push({
             x: rowStartX + col * gapX,
             y: 78 + row * gapY + (col % 2) * 12,
-            width: 41,
-            height: 52,
-            hitboxPad: 10,
+            width: ENEMY_RENDER_SIZE,
+            height: ENEMY_RENDER_SIZE,
+            hitboxPad: 0,
             direction: i % 2 === 0 ? 1 : -1,
             speed: (56 + Math.random() * 14) * speedScale * 1.07,
             wobble: Math.random() * Math.PI * 2,
@@ -677,6 +1030,7 @@ function createStudents() {
             type: "student",
             laps: 0,
             swarming: false,
+            directionChangeTimer: 700 + Math.random() * 1200,
             throwTimer: getEnemyPersonalThrowInterval(count) * (0.35 + Math.random() * 0.65),
             stunned: 0,
             invulnTimer: 0,
@@ -687,12 +1041,13 @@ function createStudents() {
     if (isBossRound()) {
         const hp = getTeacherHp();
         state.students.push({
-            x: canvas.width / 2 - 59,
+            x: canvas.width / 2 - TEACHER_RENDER_WIDTH / 2,
             y: 38,
-            width: 118,
-            height: 124,
+            width: TEACHER_RENDER_WIDTH,
+            height: TEACHER_RENDER_HEIGHT,
             hitboxPad: 14,
             direction: 1,
+            verticalDirection: Math.random() < 0.5 ? -1 : 1,
             speed: 32 * speedScale,
             wobble: 0,
             sprite: "teacher",
@@ -722,11 +1077,11 @@ function createSidelineEnemies() {
     state.sidelineEnemies = Array.from({ length: count }, (_, index) => {
         const side = index % 2 === 0 ? "left" : "right";
         return {
-            x: side === "left" ? 22 : canvas.width - 63,
-            y: sideTop + ((index * 85) % Math.max(1, sideBottom - sideTop - 52)),
-            width: 41,
-            height: 52,
-            hitboxPad: 10,
+            x: side === "left" ? 22 : canvas.width - 22 - ENEMY_RENDER_SIZE,
+            y: sideTop + ((index * 85) % Math.max(1, sideBottom - sideTop - ENEMY_RENDER_SIZE)),
+            width: ENEMY_RENDER_SIZE,
+            height: ENEMY_RENDER_SIZE,
+            hitboxPad: 0,
             direction: side === "left" ? 1 : -1,
             verticalDirection: index % 3 === 0 ? -1 : 1,
             speed: 86 + index * 4,
@@ -748,27 +1103,210 @@ function syncHud() {
     if (coinText) coinText.textContent = `Coins: ${state.coins}`;
 }
 
-function showOverlay(title, text) {
+function showOverlay(title, text, actions = []) {
+    hideMenuOverlay();
     overlay.classList.remove("hidden");
+    overlay.classList.add("flex");
     overlayTitle.textContent = title;
     overlayText.textContent = text;
+    if (overlayActions) {
+        overlayActions.innerHTML = actions.map((action) => `
+            <button class="arcade-btn ${action.className}" data-overlay-action="${action.action}" type="button">${action.label}</button>
+        `).join("");
+        overlayActions.classList.toggle("hidden", actions.length === 0);
+        overlayActions.classList.toggle("flex", actions.length > 0);
+    }
 }
 
 function hideOverlay() {
     overlay.classList.add("hidden");
+    overlay.classList.remove("flex");
+    if (overlayActions) {
+        overlayActions.innerHTML = "";
+        overlayActions.classList.add("hidden");
+        overlayActions.classList.remove("flex");
+    }
+}
+
+function showMenuOverlay() {
+    if (!menuOverlay) return;
+    menuOverlay.classList.remove("hidden");
+    menuOverlay.classList.add("flex");
+    if (gameShell) gameShell.classList.add("menu-active");
+}
+
+function showMenuScreen() {
+    state.status = "menu";
+    state.menuPhase = "home";
+    hideOverlay();
+    hideCardChoices();
+    showMenuOverlay();
+    if (loadingView) loadingView.classList.add("hidden");
+    if (storyView) storyView.classList.add("hidden");
+    if (yellowSlipView) yellowSlipView.classList.add("hidden");
+    if (menuView) menuView.classList.remove("hidden");
+    renderModeMenu();
+}
+
+function hideMenuOverlay() {
+    if (!menuOverlay) return;
+    menuOverlay.classList.add("hidden");
+    menuOverlay.classList.remove("flex");
+    if (gameShell) gameShell.classList.remove("menu-active");
+}
+
+function showLoadingScreen() {
+    state.status = "loading";
+    hideOverlay();
+    hideCardChoices();
+    showMenuOverlay();
+    if (loadingView) loadingView.classList.remove("hidden");
+    if (menuView) menuView.classList.add("hidden");
+    if (storyView) storyView.classList.add("hidden");
+    if (yellowSlipView) yellowSlipView.classList.add("hidden");
+    setTimeout(showMenuScreen, 900);
+}
+
+function renderModeMenu() {
+    if (!menuView) return;
+
+    if (state.menuPhase === "home") {
+        menuView.innerHTML = `
+            <div class="main-menu-panel text-center">
+                <p class="text-sm font-black uppercase tracking-[0.28em] text-emerald-300">Main Menu</p>
+                <h2 class="mt-2 text-4xl font-black uppercase text-white sm:text-6xl">STI Dodgeball</h2>
+                <div class="mt-8 grid gap-3 sm:grid-cols-3">
+                    <button class="menu-card selected" data-menu-action="level-selection" type="button">
+                        <span>Level Selection</span>
+                        <small>Pick Endless or Adventure and start the match.</small>
+                    </button>
+                    <button class="menu-card" data-menu-action="characters" type="button">
+                        <span>Characters</span>
+                        <small>View stats and choose your player.</small>
+                    </button>
+                    <button class="menu-card" data-menu-action="credits" type="button">
+                        <span>Credits</span>
+                        <small>Placeholder credits page.</small>
+                    </button>
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    if (state.menuPhase === "mode") {
+        menuView.innerHTML = `
+            <p class="text-sm font-black uppercase tracking-[0.28em] text-emerald-300">Level Selection</p>
+            <h2 class="mt-2 text-4xl font-black uppercase text-white sm:text-6xl">Choose Run</h2>
+            <p class="mt-2 text-sm font-black uppercase tracking-wide text-slate-200">Character: ${getCharacterConfig(state.selectedCharacter).name}</p>
+            <div class="mt-6 grid gap-3 sm:grid-cols-3">
+                <button class="menu-card ${state.selectedMode === "endless" ? "selected" : ""}" data-mode="endless" type="button">
+                    <span>Endless Mode</span>
+                    <small>No level cap. Current full game loop.</small>
+                </button>
+                <button class="menu-card ${state.selectedMode === "adventure" && state.adventureDifficulty === "easy" ? "selected" : ""}" data-mode="adventure" data-difficulty="easy" type="button">
+                    <span>Adventure Easy</span>
+                    <small>Story run to level 20.</small>
+                </button>
+                <button class="menu-card ${state.selectedMode === "adventure" && state.adventureDifficulty === "hard" ? "selected" : ""}" data-mode="adventure" data-difficulty="hard" type="button">
+                    <span>Adventure Hard</span>
+                    <small>Story run to level 30.</small>
+                </button>
+            </div>
+            <div class="mt-6 flex flex-wrap gap-3">
+                <button class="arcade-btn bg-emerald-500 text-slate-950 hover:bg-emerald-300" data-menu-action="start-run" type="button">Start Run</button>
+                <button class="arcade-btn bg-slate-100 text-slate-950 hover:bg-white" data-menu-action="home" type="button">Back</button>
+            </div>
+        `;
+        return;
+    }
+
+    if (state.menuPhase === "credits") {
+        menuView.innerHTML = `
+            <div class="text-center">
+                <p class="text-sm font-black uppercase tracking-[0.28em] text-emerald-300">Credits</p>
+                <h2 class="mt-2 text-4xl font-black uppercase text-white sm:text-6xl">Coming Soon</h2>
+                <div class="story-scene mt-6">
+                    <p>Credits placeholder. Add names, art notes, music, and special thanks here.</p>
+                </div>
+                <button class="arcade-btn mt-6 bg-slate-100 text-slate-950 hover:bg-white" data-menu-action="home" type="button">Back</button>
+            </div>
+        `;
+        return;
+    }
+
+    menuView.innerHTML = `
+        <p class="text-sm font-black uppercase tracking-[0.28em] text-emerald-300">Characters</p>
+        <h2 class="mt-2 text-4xl font-black uppercase text-white sm:text-6xl">View Stats</h2>
+        <div class="mt-6 grid gap-3 sm:grid-cols-3">
+            ${["player1", "player2", "player3"].map((characterId) => {
+                const config = getCharacterConfig(characterId);
+                const selected = state.selectedCharacter === characterId;
+                const source = spriteSources[config.base] || spriteSources.player1;
+                return `
+                    <button class="character-choice ${selected ? "selected" : ""}" data-character="${characterId}" type="button" ${config.unlocked ? "" : "disabled"}>
+                        <span class="character-choice-portrait sprite-icon">
+                            <img src="${source}" alt="${config.name}" onerror="this.style.display='none'">
+                        </span>
+                        <span>${config.name}</span>
+                        ${config.unlocked ? getCharacterStatBulletMarkup(config, "character-choice-stats") : "<small>Unlock in Adventure</small>"}
+                    </button>
+                `;
+            }).join("")}
+        </div>
+        <div class="mt-6 flex flex-wrap gap-3">
+            <button class="arcade-btn bg-amber-300 text-slate-950 hover:bg-amber-200" data-menu-action="level-selection" type="button">Level Selection</button>
+            <button class="arcade-btn bg-slate-100 text-slate-950 hover:bg-white" data-menu-action="home" type="button">Back</button>
+        </div>
+    `;
+}
+
+function selectMode(mode, difficulty = "easy") {
+    state.selectedMode = mode;
+    state.adventureDifficulty = difficulty;
+    renderModeMenu();
+}
+
+function showStoryScreen() {
+    hideOverlay();
+    hideCardChoices();
+    showMenuOverlay();
+    if (loadingView) loadingView.classList.add("hidden");
+    if (menuView) menuView.classList.add("hidden");
+    if (yellowSlipView) yellowSlipView.classList.add("hidden");
+    if (storyView) storyView.classList.remove("hidden");
+    state.status = "story";
+}
+
+function startSelectedRun() {
+    state.gameMode = state.selectedMode;
+    if (state.gameMode === "adventure" && state.status !== "story") {
+        showStoryScreen();
+        return;
+    }
+    resetGame();
+    startRoundTransition();
+    state.lastTime = performance.now();
+    hideOverlay();
+    hideMenuOverlay();
 }
 
 function resetGame() {
+    const character = getCharacterConfig(state.selectedCharacter);
     state.status = "ready";
     state.score = 0;
     state.coins = 0;
     state.round = 1;
-    state.baseHealth = BASE_PLAYER_HEALTH;
-    state.health = BASE_PLAYER_HEALTH;
+    state.baseHealth = BASE_PLAYER_HEALTH + (character.baseHpBonus || 0);
+    state.health = state.baseHealth;
     state.throwCooldown = 0;
+    state.playerSlowTimer = 0;
     state.bossChalkTimer = BOSS_CHALK_ATTACK_MS;
     state.bossChalkShots = 0;
     state.bossChalkShotTimer = 0;
+    state.yellowSlipPassed = false;
+    state.yellowSlipPhase = "idle";
+    state.yellowSlipReason = "";
     state.transitionTimer = 0;
     state.transitionBoss = false;
     state.bossRewardTimer = 0;
@@ -778,11 +1316,15 @@ function resetGame() {
     state.enemyBalls = [];
     state.coinsVisuals = [];
     state.powerUps = [];
+    state.students = [];
     state.sidelineEnemies = [];
+    state.companion = null;
     state.particles = [];
+    state.floatTexts = [];
     state.shopCards = [];
     state.shopRerolledSlots = [];
     state.shopBoughtBall = false;
+    state.shopBoughtCards = 0;
     state.shopBoughtNewBuffs = 0;
     state.playerUpgrades = {
         latestBallColor: "#f97316",
@@ -792,29 +1334,42 @@ function resetGame() {
         soccerStacks: 0,
         coffeeRounds: 0,
         peUniformStacks: 0,
+        yellowSlipStacks: 0,
         siomaiShieldRounds: 0,
         throwSpeedStacks: 0,
         projectileSpeedStacks: 0,
         movementSpeedStacks: 0,
         dodgeChanceStacks: 0
     };
+    applyCharacterStarterUpgrades();
     player.x = canvas.width / 2 - player.width / 2;
     player.y = canvas.height - 106;
     createStudents();
+    createCompanion();
     syncHud();
-    showOverlay("Ready?", "Move with WASD or arrows. Throw dodgeballs with Space when the cooldown is ready.");
+    showOverlay(`${getModeLabel()} Ready`, "Move with WASD or arrows. Throw dodgeballs with Space when the cooldown is ready.");
     hideCardChoices();
     updatePowerPanel();
+    updateCharacterPanel();
 }
 
 function startGame() {
-    if (state.status === "gameover" || state.status === "ready") {
-        resetGame();
+    if (state.status === "loading") return;
+
+    if (state.status === "menu") {
+        state.menuPhase = "mode";
+        renderModeMenu();
+        return;
     }
 
-    startRoundTransition();
-    state.lastTime = performance.now();
-    hideOverlay();
+    if (state.status === "story") {
+        startSelectedRun();
+        return;
+    }
+
+    if (state.status === "gameover" || state.status === "ready") {
+        startSelectedRun();
+    }
 }
 
 function togglePause() {
@@ -865,6 +1420,60 @@ function throwPlayerBall() {
 
     state.throwCooldown = getThrowCooldown();
     player.throwPose = 230;
+}
+
+function createCompanion() {
+    if (!state.unlocks.companion) {
+        state.companion = null;
+        return;
+    }
+
+    state.companion = {
+        x: player.x - 78,
+        y: player.y + 8,
+        width: PLAYER_RENDER_SIZE,
+        height: PLAYER_RENDER_SIZE,
+        hitboxPad: -7,
+        hp: COMPANION_BASE_HP,
+        maxHp: COMPANION_BASE_HP,
+        speed: 150,
+        throwTimer: COMPANION_THROW_INTERVAL_MS * 0.65,
+        moveTimer: 0,
+        moveX: 0,
+        moveY: 0,
+        throwPose: 0,
+        active: true
+    };
+}
+
+function fireCompanionBall() {
+    const companion = state.companion;
+    if (!companion || !companion.active) return;
+
+    const target = state.students.find((student) => student.active);
+    if (!target) return;
+
+    const originX = companion.x + companion.width / 2;
+    const originY = companion.y + 8;
+    const targetX = target.x + target.width / 2;
+    const targetY = target.y + target.height / 2;
+    const angle = Math.atan2(targetY - originY, targetX - originX);
+    const speed = 470;
+
+    state.playerBalls.push({
+        x: originX,
+        y: originY,
+        radius: 12,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        spin: 0,
+        owner: "player",
+        powerUpType: POWER_UP_TYPES.DODGEBALL,
+        bouncesLeft: 0,
+        color: "#dc2626",
+        spawnDelay: 0
+    });
+    companion.throwPose = 230;
 }
 
 function getPlayerMovementVector() {
@@ -997,6 +1606,24 @@ function burst(x, y, color) {
     }
 }
 
+function floatText(x, y, text, color) {
+    state.floatTexts.push({
+        x,
+        y,
+        text,
+        color,
+        life: 720
+    });
+}
+
+function showTagged(entity) {
+    floatText(entity.x + entity.width / 2, entity.y - 8, "TAGGED", "#ef4444");
+}
+
+function showDodged(entity) {
+    floatText(entity.x + entity.width / 2, entity.y - 8, "DODGED", "#38bdf8");
+}
+
 function spawnCoins(x, y, amount) {
     state.coins += amount;
     syncHud();
@@ -1025,7 +1652,102 @@ function maybeDropCoins(enemy) {
     }
 }
 
+function clearPlayerDanger(resetPosition = false) {
+    state.enemyBalls = [];
+    if (resetPosition) {
+        player.x = canvas.width / 2 - player.width / 2;
+        player.y = canvas.height - 106;
+    }
+    state.students.forEach((student) => {
+        if (student.swarming) {
+            student.swarming = false;
+            student.laps = 0;
+        }
+    });
+}
+
+function getYellowSlipPaperMarkup(spriteName) {
+    const source = spriteSources[spriteName];
+    if (!source) return "";
+    return `<img class="yellow-slip-paper" src="${source}" alt="Yellow Slip" onerror="this.style.display='none'">`;
+}
+
+function showYellowSlipScreen(phase, reasonTitle, effect = "") {
+    hideOverlay();
+    hideCardChoices();
+    showMenuOverlay();
+    if (loadingView) loadingView.classList.add("hidden");
+    if (menuView) menuView.classList.add("hidden");
+    if (storyView) storyView.classList.add("hidden");
+    if (yellowSlipView) yellowSlipView.classList.remove("hidden");
+
+    const signed = phase === "sign" || phase === "signing";
+    const passed = phase === "passed";
+    const failed = phase === "failed";
+    const signing = phase === "signing";
+    const spriteName = signed ? "yellowSlipBase" : passed ? "yellowSlipPassed" : "yellowSlipFailed";
+    const resultClass = passed ? "passed" : failed ? "failed" : "";
+    const paperClass = signing ? "is-signing" : effect === "reveal" ? "is-revealing" : "";
+
+    if (yellowSlipTitle) {
+        yellowSlipTitle.textContent = signing ? "Signing Yellow Slip" : signed ? "Sign Yellow Slip" : passed ? "Passed Yellow Slip" : "Failed Yellow Slip";
+    }
+    if (yellowSlipText) {
+        yellowSlipText.innerHTML = `
+            <div class="yellow-slip-stage ${resultClass}">
+                <span class="yellow-slip-burst" aria-hidden="true"></span>
+                <span class="yellow-slip-paper-wrap ${paperClass}">
+                    ${getYellowSlipPaperMarkup(spriteName)}
+                </span>
+            </div>
+        `;
+    }
+    if (yellowSlipMessage) {
+        yellowSlipMessage.textContent = signing
+            ? "Signing..."
+            : signed
+                ? `${reasonTitle}. Sign the Yellow Slip.`
+                : passed
+                    ? "Passed Yellow Slip. Continue the run."
+                    : "Failed Yellow Slip. You failed the exam.";
+    }
+    if (yellowSlipBtn) {
+        yellowSlipBtn.textContent = signing ? "Signing..." : signed ? "Sign Yellow Slip" : passed ? "Continue" : "Main Menu";
+        yellowSlipBtn.disabled = signing;
+    }
+}
+
+function showYellowSlipResult(passed) {
+    state.yellowSlipPassed = passed;
+    state.yellowSlipPhase = passed ? "passed" : "failed";
+    showYellowSlipScreen(state.yellowSlipPhase, state.yellowSlipReason, "reveal");
+}
+
+function tryYellowSlip(reasonTitle) {
+    if (!state.unlocks.yellowSlip || state.playerUpgrades.yellowSlipStacks <= 0) return false;
+
+    state.playerUpgrades.yellowSlipStacks = 0;
+    state.status = "yellowSlip";
+    state.yellowSlipPassed = false;
+    state.yellowSlipPhase = "sign";
+    state.yellowSlipReason = reasonTitle;
+    showYellowSlipScreen("sign", reasonTitle);
+    updatePowerPanel();
+    syncHud();
+    return true;
+}
+
+function finishKnockout(title, text) {
+    if (tryYellowSlip(title)) return;
+    state.status = "gameover";
+    showOverlay(title, text, [
+        { action: "main-menu", label: "Main Menu", className: "bg-slate-100 text-slate-950 hover:bg-white" },
+        { action: "new-run", label: "New Run", className: "bg-emerald-500 text-slate-950 hover:bg-emerald-300" }
+    ]);
+}
+
 function loseHealth() {
+    showTagged(player);
     if (state.playerUpgrades.siomaiShieldRounds > 0) {
         state.playerUpgrades.siomaiShieldRounds = 0;
         burst(player.x + player.width / 2, player.y + player.height / 2, "#22c55e");
@@ -1047,18 +1769,57 @@ function loseHealth() {
     syncHud();
 
     if (state.health <= 0) {
-        state.status = "gameover";
-        showOverlay("Knocked Out", `Final score: ${state.score}. Press Start for a rematch.`);
+        finishKnockout("Knocked Out", `Final score: ${state.score}. Press Start for a rematch.`);
         return;
     }
 
-    state.enemyBalls = [];
-    player.x = canvas.width / 2 - player.width / 2;
+    clearPlayerDanger();
+}
+
+function unlockAdventureMilestone(level) {
+    let message = "";
+    if (level === 10 && !state.unlocks.companion) {
+        state.unlocks.companion = true;
+        message = "Companion unlocked for future runs.";
+    }
+    if (level === 15 && !state.unlocks.yellowSlip) {
+        state.unlocks.yellowSlip = true;
+        message = "Yellow Slip added to the shop.";
+    }
+    if (level === 20 && !state.unlocks.player2) {
+        state.unlocks.player2 = true;
+        message = "Lebron Games unlocked.";
+    }
+    if (level === 25 && !state.unlocks.bossDamagePlus2) {
+        state.unlocks.bossDamagePlus2 = true;
+        message = "Boss damage permanently increased by 2.";
+    }
+    if (level === 30 && !state.unlocks.player3) {
+        state.unlocks.player3 = true;
+        message = "Satire O. Gojo unlocked.";
+    }
+
+    if (message) {
+        saveUnlocks();
+        floatText(canvas.width / 2, canvas.height / 2 - 90, `LEVEL ${level}: ${message}`, "#facc15");
+    }
+}
+
+function finishAdventure() {
+    state.status = "gameover";
+    showOverlay("Adventure Cleared", `${getModeLabel()} complete. Unlocks are ready for Endless Mode.`);
 }
 
 function nextRound() {
     const clearedBoss = isBossRound();
     state.completedLevels++;
+    if (state.gameMode === "adventure") {
+        unlockAdventureMilestone(state.completedLevels);
+        if (isAdventureComplete()) {
+            finishAdventure();
+            return;
+        }
+    }
     state.round++;
     state.score += 250 * state.round;
     state.playerBalls = [];
@@ -1070,11 +1831,11 @@ function nextRound() {
     state.bossChalkShots = 0;
     state.bossChalkShotTimer = 0;
     createStudents();
+    if (!state.companion && state.unlocks.companion) createCompanion();
     syncHud();
     updatePowerPanel();
 
     if (clearedBoss) {
-        state.baseHealth += BOSS_REWARD_HEALTH;
         state.health += BOSS_REWARD_HEALTH;
         state.status = "bossReward";
         state.bossRewardTimer = BOSS_REWARD_OVERLAY_MS;
@@ -1096,6 +1857,12 @@ function continueAfterRoundReward() {
 
 function updateGame(deltaMs) {
     const deltaSeconds = deltaMs / 1000;
+
+    state.floatTexts.forEach((item) => {
+        item.y -= deltaSeconds * 34;
+        item.life -= deltaMs;
+    });
+    state.floatTexts = state.floatTexts.filter((item) => item.life > 0);
 
     state.coinsVisuals.forEach((coin) => {
         if (coin.delay > 0) {
@@ -1131,6 +1898,8 @@ function updateGame(deltaMs) {
 
     if (state.status !== "playing") return;
 
+    state.playerSlowTimer = Math.max(0, state.playerSlowTimer - deltaMs);
+
     const playerSpeed = getPlayerSpeed();
     if (keys.left) player.x -= playerSpeed * deltaSeconds;
     if (keys.right) player.x += playerSpeed * deltaSeconds;
@@ -1160,6 +1929,38 @@ function updateGame(deltaMs) {
             student.y += Math.sin(angle) * speed * deltaSeconds;
             student.direction = Math.cos(angle) >= 0 ? 1 : -1;
             return;
+        }
+
+        if (student.type === "teacher") {
+            const teacherTop = FIELD_Y + 10;
+            const teacherBottom = FIELD_Y + 150;
+            student.x += student.direction * student.speed * deltaSeconds;
+            student.y += student.verticalDirection * student.speed * TEACHER_VERTICAL_SPEED_MULTIPLIER * deltaSeconds;
+
+            if (student.x <= FIELD_X) {
+                student.x = FIELD_X;
+                student.direction = 1;
+            } else if (student.x + student.width >= canvas.width - FIELD_X) {
+                student.x = canvas.width - FIELD_X - student.width;
+                student.direction = -1;
+            }
+
+            if (student.y <= teacherTop) {
+                student.y = teacherTop;
+                student.verticalDirection = 1;
+            } else if (student.y >= teacherBottom) {
+                student.y = teacherBottom;
+                student.verticalDirection = -1;
+            }
+            return;
+        }
+
+        student.directionChangeTimer -= deltaMs;
+        if (student.type === "student" && student.directionChangeTimer <= 0) {
+            if (Math.random() < 0.38) {
+                student.direction *= -1;
+            }
+            student.directionChangeTimer = 650 + Math.random() * 1400;
         }
 
         student.x += student.direction * student.speed * deltaSeconds;
@@ -1203,6 +2004,29 @@ function updateGame(deltaMs) {
             enemy.throwTimer = SIDELINE_THROW_INTERVAL_MS;
         }
     });
+
+    const companion = state.companion;
+    if (companion && companion.active) {
+        companion.throwPose = Math.max(0, companion.throwPose - deltaMs);
+        companion.throwTimer -= deltaMs;
+        companion.moveTimer -= deltaMs;
+
+        if (companion.moveTimer <= 0) {
+            companion.moveX = Math.random() * 2 - 1;
+            companion.moveY = Math.random() * 2 - 1;
+            companion.moveTimer = 620 + Math.random() * 900;
+        }
+
+        companion.x += companion.moveX * companion.speed * deltaSeconds;
+        companion.y += companion.moveY * companion.speed * deltaSeconds;
+        companion.x = clamp(companion.x, 85, canvas.width - companion.width - 85);
+        companion.y = clamp(companion.y, canvas.height * 0.52, canvas.height - companion.height - 32);
+
+        if (companion.throwTimer <= 0) {
+            fireCompanionBall();
+            companion.throwTimer = COMPANION_THROW_INTERVAL_MS;
+        }
+    }
 
     const activeThrowers = state.students.filter((student) => student.active && !student.swarming);
     activeThrowers.forEach((student) => {
@@ -1286,14 +2110,20 @@ function updateGame(deltaMs) {
         ));
         if (!hit) continue;
 
-        if (hit.type === "student" && Math.random() < getStudentDodgeChance()) {
+        if (hit.type === "student" && canStudentDodge(hit) && Math.random() < getStudentDodgeChance()) {
             hit.invulnTimer = 220;
-            hit.x = clamp(hit.x + hit.direction * 72, 34, canvas.width - hit.width - 34);
+            const playLeft = 85;
+            const playRight = canvas.width - 85;
+            const safeMargin = (playRight - playLeft) * 0.15;
+            hit.x = clamp(hit.x + hit.direction * 72, playLeft + safeMargin, playRight - safeMargin - hit.width);
             burst(hit.x + hit.width / 2, hit.y + hit.height / 2, "#94a3b8");
+            showDodged(hit);
             continue;
         }
 
-        hit.hp--;
+        const damage = hit.type === "teacher" && state.round >= 25 && state.unlocks.bossDamagePlus2 ? 3 : 1;
+        hit.hp -= damage;
+        showTagged(hit);
         if (hit.type === "teacher") {
             hit.invulnTimer = BOSS_IFRAME_MS;
         }
@@ -1319,11 +2149,29 @@ function updateGame(deltaMs) {
     for (let b = state.enemyBalls.length - 1; b >= 0; b--) {
         const ball = state.enemyBalls[b];
         if (ball.spawnDelay > 0) continue;
+        if (state.companion && state.companion.active && projectileOverlapsRect(ball, hitbox(state.companion))) {
+            state.enemyBalls.splice(b, 1);
+            if (Math.random() < COMPANION_DODGE_CHANCE) {
+                showDodged(state.companion);
+                burst(state.companion.x + state.companion.width / 2, state.companion.y + state.companion.height / 2, "#38bdf8");
+                continue;
+            }
+            showTagged(state.companion);
+            state.companion.hp--;
+            burst(state.companion.x + state.companion.width / 2, state.companion.y + state.companion.height / 2, "#ef4444");
+            if (state.companion.hp <= 0) state.companion.active = false;
+            continue;
+        }
+
         if (projectileOverlapsRect(ball, hitbox(player))) {
             state.enemyBalls.splice(b, 1);
             if (Math.random() < getPlayerProjectileDodgeChance()) {
                 burst(player.x + player.width / 2, player.y + player.height / 2, "#c084fc");
+                showDodged(player);
                 continue;
+            }
+            if (ball.type === "chalk") {
+                state.playerSlowTimer = PLAYER_SLOW_MS;
             }
             loseHealth();
             break;
@@ -1357,8 +2205,7 @@ function updateGame(deltaMs) {
         state.playerUpgrades.peUniformStacks = 0;
         state.playerUpgrades.siomaiShieldRounds = 0;
         syncHud();
-        state.status = "gameover";
-        showOverlay("Swarmed", `The other team finished 3 laps and rushed you. Final score: ${state.score}.`);
+        finishKnockout("Swarmed", `The other team finished 3 laps and rushed you. Final score: ${state.score}.`);
     }
 
     state.particles.forEach((particle) => {
@@ -1376,6 +2223,15 @@ function updateGame(deltaMs) {
 }
 
 function drawCourt() {
+    const customBackground = isBossRound() && hasSprite(sprites.classroom)
+        ? sprites.classroom
+        : sprites.field;
+
+    if (hasSprite(customBackground)) {
+        ctx.drawImage(customBackground, 0, 0, canvas.width, canvas.height);
+        return;
+    }
+
     ctx.fillStyle = isBossRound() ? "#d7e3ea" : "#e8cf91";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -1419,20 +2275,20 @@ function drawCourt() {
     // LEFT SIDE AREA - visible side thrower zone
     ctx.strokeStyle = "#000000";
     ctx.lineWidth = 4;
-    ctx.strokeRect(0, 28, 85, canvas.height - 56);
+    ctx.strokeRect(0, FIELD_Y, FIELD_X, FIELD_HEIGHT);
     
     // RIGHT SIDE AREA - visible side thrower zone
-    ctx.strokeRect(canvas.width - 85, 28, 85, canvas.height - 56);
+    ctx.strokeRect(canvas.width - FIELD_X, FIELD_Y, FIELD_X, FIELD_HEIGHT);
 
     // MAIN PLAY FIELD
     ctx.strokeStyle = "#1f2937";
     ctx.lineWidth = 4;
-    ctx.strokeRect(85, 28, canvas.width - 170, canvas.height - 56);
+    ctx.strokeRect(FIELD_X, FIELD_Y, FIELD_WIDTH, FIELD_HEIGHT);
     
     // Center line divider
     ctx.beginPath();
-    ctx.moveTo(85, canvas.height / 2);
-    ctx.lineTo(canvas.width - 85, canvas.height / 2);
+    ctx.moveTo(FIELD_X, canvas.height / 2);
+    ctx.lineTo(canvas.width - FIELD_X, canvas.height / 2);
     ctx.stroke();
 
 }
@@ -1485,13 +2341,15 @@ function drawStudentBody(entity, shirt, shorts, facing = 1) {
 }
 
 function drawPlayer() {
-    const baseSprite = state.playerUpgrades.peUniformStacks > 0 && hasSprite(sprites.playerPe)
-        ? sprites.playerPe
-        : sprites.player;
-    const throwSprite = state.playerUpgrades.peUniformStacks > 0 && hasSprite(sprites.playerPeThrow)
-        ? sprites.playerPeThrow
-        : sprites.playerThrow;
+    const character = getCharacterConfig(state.selectedCharacter);
+    const baseSprite = state.playerUpgrades.peUniformStacks > 0
+        ? firstLoadedSprite(character.pe, "player1Pe", "playerPe", character.base, "player1", "player")
+        : firstLoadedSprite(character.base, "player1", "player");
+    const throwSprite = state.playerUpgrades.peUniformStacks > 0
+        ? firstLoadedSprite(character.peThrow, "player1PeThrow", "playerPeThrow", character.throw, "player1Throw", "playerThrow")
+        : firstLoadedSprite(character.throw, "player1Throw", "playerThrow");
     const sprite = player.throwPose > 0 && hasSprite(throwSprite) ? throwSprite : baseSprite;
+    drawSpriteGroundShadow(sprite, player, 0.26);
     if (hasSprite(sprite)) {
         ctx.drawImage(sprite, player.x, player.y, player.width, player.height);
         if (player.throwPose > 0 && !hasSprite(throwSprite)) {
@@ -1500,7 +2358,24 @@ function drawPlayer() {
         return;
     }
 
-    drawStudentBody(player, "#2563eb", "#111827", 1);
+    drawStudentBody(player, character.shirt, "#111827", 1);
+}
+
+function drawCompanion() {
+    const companion = state.companion;
+    if (!companion || !companion.active) return;
+
+    const sprite = companion.throwPose > 0
+        ? firstLoadedSprite("companionThrow", "companion", "companionPlaceholder")
+        : firstLoadedSprite("companion", "companionPlaceholder");
+
+    drawSpriteGroundShadow(sprite, companion, 0.24);
+    if (hasSprite(sprite)) {
+        ctx.drawImage(sprite, companion.x, companion.y, companion.width, companion.height);
+    } else {
+        drawStudentBody(companion, "#facc15", "#14532d", 1);
+    }
+    drawHealthBar(companion);
 }
 
 function drawPlayerBarrier() {
@@ -1525,19 +2400,7 @@ function drawPlayerBarrier() {
 }
 
 function drawPlayerPowerEffects() {
-    if (state.playerUpgrades.peUniformStacks <= 0) return;
-
-    const x = player.x - 4;
-    const y = player.y - 4;
-    const width = player.width + 8;
-    const height = player.height + 8;
-
-    ctx.save();
-    ctx.globalAlpha = 0.55;
-    ctx.strokeStyle = "#38bdf8";
-    ctx.lineWidth = 3;
-    ctx.strokeRect(x, y, width, height);
-    ctx.restore();
+    return;
 }
 
 function drawCoffeeIndicator() {
@@ -1562,8 +2425,36 @@ function drawCoffeeIndicator() {
     ctx.restore();
 }
 
+function drawPlayerSlowIndicator() {
+    if (state.playerSlowTimer <= 0) return;
+
+    const progress = clamp(state.playerSlowTimer / PLAYER_SLOW_MS, 0, 1);
+    const x = player.x - 8;
+    const y = player.y + player.height - 10;
+
+    ctx.save();
+    ctx.globalAlpha = 0.45 + progress * 0.35;
+    if (hasSprite(sprites.slowed)) {
+        ctx.drawImage(sprites.slowed, x - 16, y - 16, 32, 32);
+        ctx.restore();
+        return;
+    }
+    ctx.strokeStyle = "#60a5fa";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(x, y, 9 + progress * 5, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = "#bfdbfe";
+    ctx.font = "900 13px Poppins, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("S", x, y);
+    ctx.restore();
+}
+
 function drawPlayerHealthBar() {
-    const totalSlots = getBasePlayerHealth() +
+    const visibleHealthSlots = Math.max(BASE_PLAYER_HEALTH, state.health);
+    const totalSlots = visibleHealthSlots +
         state.playerUpgrades.peUniformStacks +
         (state.playerUpgrades.siomaiShieldRounds > 0 ? 1 : 0);
     const slotWidth = 15;
@@ -1571,14 +2462,14 @@ function drawPlayerHealthBar() {
     const width = totalSlots * slotWidth + (totalSlots - 1) * slotGap;
     const height = 6;
     const x = player.x + player.width / 2 - width / 2;
-    const y = player.y - 14;
+    const y = player.y + player.height + 7;
     let slot = 0;
 
     ctx.save();
     ctx.fillStyle = "rgba(15, 23, 42, 0.36)";
     ctx.fillRect(x - 2, y - 2, width + 4, height + 4);
 
-    for (let i = 0; i < getBasePlayerHealth(); i++) {
+    for (let i = 0; i < visibleHealthSlots; i++) {
         ctx.fillStyle = i < state.health ? "#22c55e" : "rgba(34, 197, 94, 0.22)";
         ctx.fillRect(x + slot * (slotWidth + slotGap), y, slotWidth, height);
         slot++;
@@ -1622,10 +2513,15 @@ function drawEnemy(student) {
     if (!student.active) return;
     if (student.invulnTimer > 0 && Math.floor(student.invulnTimer / 80) % 2 === 0) return;
 
-    const throwSpriteName = `${student.sprite}Throw`;
+    const throwSpriteName = getEnemyThrowSpriteName(student);
     const sprite = student.throwPose > 0 && hasSprite(sprites[throwSpriteName])
         ? sprites[throwSpriteName]
         : sprites[student.sprite];
+    const isTeacher = student.type === "teacher";
+    drawSpriteGroundShadow(sprite, student, isTeacher ? 0.30 : 0.24, {
+        flatten: isTeacher ? 0.26 : 0.30,
+        skew: isTeacher ? 0.40 : 0.46
+    });
 
     if (hasSprite(sprite)) {
         ctx.drawImage(sprite, student.x, student.y, student.width, student.height);
@@ -1649,6 +2545,19 @@ function drawEnemy(student) {
     drawLapWarning(student);
 }
 
+function getEnemyThrowSpriteName(student) {
+    const throwSpriteName = `${student.sprite}Throw`;
+    if (student.type !== "teacher" || student.throwPose <= 0) return throwSpriteName;
+
+    const elapsed = TEACHER_THROW_ANIMATION_MS - student.throwPose;
+    const teacherFrame = elapsed < TEACHER_THROW_FRAME_MS ? "teacherThrow" : "teacherThrowMuzzle";
+
+    if (hasSprite(sprites[teacherFrame])) return teacherFrame;
+    if (hasSprite(sprites.teacherThrow)) return "teacherThrow";
+    if (hasSprite(sprites.teacherThrowMuzzle)) return "teacherThrowMuzzle";
+    return throwSpriteName;
+}
+
 function drawHealthBar(entity) {
     if (entity.maxHp <= 1 || !entity.active || entity.type === "teacher") return;
 
@@ -1660,7 +2569,7 @@ function drawHealthBar(entity) {
 
     ctx.fillStyle = "rgba(15, 23, 42, 0.35)";
     ctx.fillRect(x, y, width, height);
-    ctx.fillStyle = fill > 0.45 ? "#22c55e" : "#ef4444";
+    ctx.fillStyle = fill > 0.5 ? "#22c55e" : "#ef4444";
     ctx.fillRect(x, y, width * fill, height);
     ctx.strokeStyle = "#111827";
     ctx.lineWidth = 2;
@@ -1704,10 +2613,97 @@ function drawBossHealthBar() {
     ctx.restore();
 }
 
+function drawGroundShadow(entity, opacity = 0.24, widthScale = 0.68, heightScale = 0.16) {
+    const width = entity.shadowWidth || entity.width || entity.radius * 2;
+    const height = entity.shadowHeight || entity.height || entity.radius * 2;
+    const x = entity.x + width / 2 - width * 0.08;
+    const y = entity.y + height - height * 0.05;
+
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    ctx.fillStyle = "#000000";
+    ctx.beginPath();
+    ctx.ellipse(x, y, width * widthScale, height * heightScale, -0.20, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+}
+
+function drawSpriteGroundShadow(sprite, entity, opacity = 0.24, options = {}) {
+    if (!hasSprite(sprite)) {
+        drawGroundShadow(entity, opacity);
+        return;
+    }
+
+    const detectedAnchor = getSpriteRightFootAnchor(sprite);
+    const footXRatio = options.footXRatio ?? detectedAnchor.xRatio;
+    const footYRatio = options.footYRatio ?? detectedAnchor.yRatio;
+    const skew = options.skew ?? 0.46;
+    const flatten = options.flatten ?? 0.30;
+    const stretch = options.stretch ?? 0.94;
+    const offsetX = options.offsetX ?? 0;
+    const offsetY = options.offsetY ?? 0;
+    const footX = entity.width * footXRatio;
+    const footY = entity.height * footYRatio;
+    const anchorX = entity.x + footX;
+    const anchorY = entity.y + footY;
+
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    ctx.imageSmoothingEnabled = false;
+    ctx.filter = "brightness(0)";
+    ctx.translate(anchorX + offsetX, anchorY + offsetY);
+    ctx.transform(stretch, 0, skew, -flatten, 0, 0);
+    ctx.drawImage(sprite, -footX, -footY, entity.width, entity.height);
+    ctx.restore();
+}
+
+function drawFloatingPickupShadow(powerUp) {
+    ctx.save();
+    ctx.globalAlpha = 0.24;
+    ctx.fillStyle = "#000000";
+    ctx.beginPath();
+    ctx.ellipse(powerUp.x - 7, powerUp.y + powerUp.radius + 13, powerUp.radius * 0.95, powerUp.radius * 0.28, -0.20, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+}
+
+function drawProjectileShadow(ball) {
+    ctx.save();
+    ctx.globalAlpha = 0.30;
+    ctx.fillStyle = "#000000";
+
+    if (ball.type === "chalk") {
+        ctx.translate(ball.x - 15, ball.y + 26);
+        ctx.rotate(ball.angle + Math.PI / 2 - 0.205);
+        if (hasSprite(sprites.chalk)) {
+            ctx.imageSmoothingEnabled = false;
+            ctx.filter = "brightness(0)";
+            ctx.transform(1.08, 0, -0.22, 0.72, 0, 0);
+            ctx.drawImage(sprites.chalk, -ball.width / 2, -ball.height / 2, ball.width, ball.height);
+            ctx.restore();
+            return;
+        }
+        ctx.beginPath();
+        ctx.ellipse(0, 0, ball.width * 0.82, ball.height * 0.20, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        return;
+    }
+
+    const shadowX = ball.x - ball.radius * 0.82;
+    const shadowY = ball.y + ball.radius * 1.42;
+    ctx.beginPath();
+    ctx.ellipse(shadowX, shadowY, ball.radius * 1.06, ball.radius * 0.30, -0.205, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+}
+
 function drawBall(ball) {
     if (ball.spawnDelay > 0) return;
 
     const size = ball.radius * 2;
+    drawProjectileShadow(ball);
+
     if (ball.type === "chalk") {
         ctx.save();
         ctx.translate(ball.x, ball.y);
@@ -1776,16 +2772,31 @@ function getPowerUpSpriteName(type) {
     if (type === POWER_UP_TYPES.VOLLEYBALL) return "volleyball";
     if (type === POWER_UP_TYPES.SOCCERBALL) return "soccerball";
     if (type === POWER_UP_TYPES.SIOMAI) return "siomaiRice";
-    if (type === POWER_UP_TYPES.PE_UNIFORM) return "playerPe";
+    if (type === POWER_UP_TYPES.PE_UNIFORM) return "player1Pe";
+    return "";
+}
+
+function getPowerUpIconSpriteName(type) {
+    if (type === POWER_UP_TYPES.DODGEBALL) return "dodgeballBuffIcon";
+    if (type === POWER_UP_TYPES.VOLLEYBALL) return "volleyballBuffIcon";
+    if (type === POWER_UP_TYPES.SOCCERBALL) return "soccerballBuffIcon";
+    if (type === POWER_UP_TYPES.SIOMAI) return "siomaiRiceBuffIcon";
+    if (type === POWER_UP_TYPES.COFFEE) return "icedCoffeeBuffIcon";
+    if (type === POWER_UP_TYPES.PE_UNIFORM) return "peUniformBuffIcon";
+    if (type === POWER_UP_TYPES.THROW_SPEED) return "throwSpeedBuffIcon";
+    if (type === POWER_UP_TYPES.PROJECTILE_SPEED) return "projectileSpeedBuffIcon";
+    if (type === POWER_UP_TYPES.MOVEMENT_SPEED) return "movementSpeedBuffIcon";
+    if (type === POWER_UP_TYPES.DODGE_CHANCE) return "playerDodgeBuffIcon";
+    if (type === POWER_UP_TYPES.YELLOW_SLIP) return "yellowSlipBuffIcon";
     return "";
 }
 
 function getPowerUpIconMarkup(type, className = "power-icon") {
-    const spriteName = getPowerUpSpriteName(type);
+    const spriteName = getPowerUpIconSpriteName(type) || getPowerUpSpriteName(type);
     const source = spriteSources[spriteName];
     const label = getPowerUpLabel(type);
 
-    if (source) {
+    if (source && hasSprite(sprites[spriteName])) {
         return `<span class="${className} sprite-icon"><img src="${source}" alt="${label}"></span>`;
     }
 
@@ -1798,6 +2809,7 @@ function getPowerUpLabel(type) {
     if (type === POWER_UP_TYPES.DODGEBALL) return "DB";
     if (type === POWER_UP_TYPES.VOLLEYBALL) return "VB";
     if (type === POWER_UP_TYPES.PE_UNIFORM) return "PE";
+    if (type === POWER_UP_TYPES.YELLOW_SLIP) return "YS";
     if (type === POWER_UP_TYPES.THROW_SPEED) return "AG";
     if (type === POWER_UP_TYPES.PROJECTILE_SPEED) return "AS";
     if (type === POWER_UP_TYPES.MOVEMENT_SPEED) return "SP";
@@ -1811,6 +2823,7 @@ function getPowerUpColor(type) {
     if (type === POWER_UP_TYPES.DODGEBALL) return "#dc2626";
     if (type === POWER_UP_TYPES.VOLLEYBALL) return "#facc15";
     if (type === POWER_UP_TYPES.PE_UNIFORM) return "#0ea5e9";
+    if (type === POWER_UP_TYPES.YELLOW_SLIP) return "#facc15";
     if (type === POWER_UP_TYPES.THROW_SPEED) return "#84cc16";
     if (type === POWER_UP_TYPES.PROJECTILE_SPEED) return "#fb923c";
     if (type === POWER_UP_TYPES.MOVEMENT_SPEED) return "#22d3ee";
@@ -1828,6 +2841,7 @@ function getPowerUpName(type) {
     if (type === POWER_UP_TYPES.PROJECTILE_SPEED) return "Arm Strength";
     if (type === POWER_UP_TYPES.MOVEMENT_SPEED) return "Speed";
     if (type === POWER_UP_TYPES.DODGE_CHANCE) return "Sneaky";
+    if (type === POWER_UP_TYPES.YELLOW_SLIP) return "Yellow Slip";
     return "PE Uniform";
 }
 
@@ -1835,8 +2849,8 @@ function makePowerPanelRow(type, amount = 0) {
     return `
         <div class="power-row">
             ${getPowerUpIconMarkup(type)}
-            <span class="power-name">${getPowerUpName(type)}</span>
-            <span class="power-amount">${amount}</span>
+            <span class="power-name" title="${getPowerUpName(type)}">${getPowerUpName(type)}</span>
+            <span class="power-amount">x${amount}</span>
         </div>
     `;
 }
@@ -1852,6 +2866,7 @@ function updatePowerPanel() {
     if (upgrades.soccerStacks > 0) rows.push(makePowerPanelRow(POWER_UP_TYPES.SOCCERBALL, upgrades.soccerStacks));
     if (upgrades.siomaiShieldRounds > 0) rows.push(makePowerPanelRow(POWER_UP_TYPES.SIOMAI, upgrades.siomaiShieldRounds));
     if (upgrades.peUniformStacks > 0) rows.push(makePowerPanelRow(POWER_UP_TYPES.PE_UNIFORM, upgrades.peUniformStacks));
+    if (upgrades.yellowSlipStacks > 0) rows.push(makePowerPanelRow(POWER_UP_TYPES.YELLOW_SLIP, upgrades.yellowSlipStacks));
     if (upgrades.throwSpeedStacks > 0) rows.push(makePowerPanelRow(POWER_UP_TYPES.THROW_SPEED, upgrades.throwSpeedStacks));
     if (upgrades.projectileSpeedStacks > 0) rows.push(makePowerPanelRow(POWER_UP_TYPES.PROJECTILE_SPEED, upgrades.projectileSpeedStacks));
     if (upgrades.movementSpeedStacks > 0) rows.push(makePowerPanelRow(POWER_UP_TYPES.MOVEMENT_SPEED, upgrades.movementSpeedStacks));
@@ -1864,9 +2879,30 @@ function updatePowerPanel() {
     powerList.innerHTML = rows.join("");
 }
 
+function updateCharacterPanel() {
+    if (!characterPanel) return;
+
+    const character = getCharacterConfig(state.selectedCharacter);
+    const source = spriteSources[character.base] || spriteSources.player1;
+    characterPanel.innerHTML = `
+        <h2 class="text-sm font-black uppercase tracking-[0.18em] text-slate-800">Character</h2>
+        <div class="character-card">
+            <span class="character-portrait sprite-icon">
+                <img src="${source}" alt="${character.name}" onerror="this.style.display='none'">
+            </span>
+            <div class="character-details">
+                <span class="character-name">${character.name}</span>
+                <span class="character-status">${getModeLabel()}</span>
+                ${getCharacterStatBulletMarkup(character)}
+            </div>
+        </div>
+    `;
+}
+
 function drawPowerUp(powerUp) {
     const bob = Math.sin(powerUp.pulse) * 3;
-    const image = sprites[powerUp.type];
+    const image = sprites[getPowerUpIconSpriteName(powerUp.type)] || sprites[powerUp.type];
+    drawFloatingPickupShadow(powerUp);
 
     if (hasSprite(image)) {
         ctx.drawImage(image, powerUp.x - 18, powerUp.y - 18 + bob, 36, 36);
@@ -1952,7 +2988,7 @@ function drawBossRewardOverlay() {
     ctx.fillText("BOSS CLEARED", canvas.width / 2, canvas.height / 2 - 42);
     ctx.fillStyle = "#dcfce7";
     ctx.font = "900 28px Poppins, sans-serif";
-    ctx.fillText(`+${BOSS_REWARD_HEALTH} BASE HP  +${BOSS_REWARD_COINS} COINS`, canvas.width / 2, canvas.height / 2 + 34);
+    ctx.fillText(`+${BOSS_REWARD_HEALTH} HP  +${BOSS_REWARD_COINS} COINS`, canvas.width / 2, canvas.height / 2 + 34);
     ctx.restore();
 }
 
@@ -1961,6 +2997,11 @@ function drawHeldPowerUp(student) {
 
     ctx.save();
     ctx.translate(student.x + student.width - 2, student.y - 8);
+    if (student.heldPowerUp === POWER_UP_TYPES.COFFEE && hasSprite(sprites.coffeeBeanIcon)) {
+        ctx.drawImage(sprites.coffeeBeanIcon, -12, -12, 24, 24);
+        ctx.restore();
+        return;
+    }
     ctx.fillStyle = getPowerUpColor(student.heldPowerUp);
     ctx.beginPath();
     ctx.arc(0, 0, 10, 0, Math.PI * 2);
@@ -1976,6 +3017,21 @@ function drawParticles() {
         ctx.globalAlpha = clamp(particle.life / 360, 0, 1);
         ctx.fillStyle = particle.color;
         ctx.fillRect(particle.x, particle.y, 5, 5);
+    });
+    ctx.globalAlpha = 1;
+}
+
+function drawFloatTexts() {
+    state.floatTexts.forEach((item) => {
+        ctx.globalAlpha = clamp(item.life / 720, 0, 1);
+        ctx.fillStyle = item.color;
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 4;
+        ctx.font = "900 18px Poppins, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.strokeText(item.text, item.x, item.y);
+        ctx.fillText(item.text, item.x, item.y);
     });
     ctx.globalAlpha = 1;
 }
@@ -2009,10 +3065,10 @@ function drawCoin(coin) {
 }
 
 function drawThrowBar() {
-    const meterWidth = 48;
+    const meterWidth = 76;
     const meterHeight = 6;
     const x = player.x + player.width / 2 - meterWidth / 2;
-    const y = player.y + player.height + 8;
+    const y = player.y + player.height + 18;
     const fill = 1 - clamp(state.throwCooldown / getThrowCooldown(), 0, 1);
 
     ctx.save();
@@ -2039,12 +3095,15 @@ function draw() {
     state.coinsVisuals.forEach(drawCoin);
     state.playerBalls.forEach(drawBall);
     state.enemyBalls.forEach(drawBall);
+    drawCompanion();
     drawPlayerBarrier();
     drawPlayerPowerEffects();
     drawPlayer();
-    drawPlayerHealthBar();
+    drawPlayerSlowIndicator();
     drawCoffeeIndicator();
+    drawPlayerHealthBar();
     drawParticles();
+    drawFloatTexts();
     drawThrowBar();
     drawRoundTransition();
     drawBossRewardOverlay();
@@ -2098,7 +3157,17 @@ function holdButton(button, keyName) {
 
 startBtn.addEventListener("click", startGame);
 pauseBtn.addEventListener("click", togglePause);
-resetBtn.addEventListener("click", resetGame);
+resetBtn.addEventListener("click", () => {
+    if (["loading", "menu", "story", "yellowSlip", "gameover", "ready"].includes(state.status)) {
+        showMenuScreen();
+        return;
+    }
+
+    resetGame();
+});
+if (mainMenuBtn) {
+    mainMenuBtn.addEventListener("click", showMenuScreen);
+}
 holdButton(leftBtn, "left");
 holdButton(rightBtn, "right");
 fireBtn.addEventListener("pointerdown", throwPlayerBall);
@@ -2121,8 +3190,90 @@ if (skipCardBtn) {
         skipCardSelection();
     });
 }
+if (skipStoryBtn) {
+    skipStoryBtn.addEventListener("click", startSelectedRun);
+}
+if (overlayActions) {
+    overlayActions.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-overlay-action]");
+        if (!button) return;
+
+        const action = button.dataset.overlayAction;
+        if (action === "main-menu") {
+            showMenuScreen();
+            return;
+        }
+        if (action === "new-run") {
+            startSelectedRun();
+        }
+    });
+}
+if (menuView) {
+    menuView.addEventListener("click", (event) => {
+        const actionButton = event.target.closest("[data-menu-action]");
+        if (actionButton) {
+            const action = actionButton.dataset.menuAction;
+            if (action === "new-game" || action === "level-selection") state.menuPhase = "mode";
+            if (action === "home") state.menuPhase = "home";
+            if (action === "mode") state.menuPhase = "mode";
+            if (action === "characters") state.menuPhase = "character";
+            if (action === "credits") state.menuPhase = "credits";
+            if (action === "confirm-mode") state.menuPhase = "character";
+            if (action === "confirm-character" || action === "start-run") {
+                startSelectedRun();
+                return;
+            }
+            renderModeMenu();
+            return;
+        }
+
+        const modeButton = event.target.closest("[data-mode]");
+        if (modeButton) {
+            selectMode(modeButton.dataset.mode, modeButton.dataset.difficulty || "easy");
+            return;
+        }
+
+        const button = event.target.closest("[data-character]");
+        if (!button || button.disabled) return;
+        const config = getCharacterConfig(button.dataset.character);
+        if (!config.unlocked) return;
+        state.selectedCharacter = config.id;
+        renderModeMenu();
+        updateCharacterPanel();
+    });
+}
+if (yellowSlipBtn) {
+    yellowSlipBtn.addEventListener("click", () => {
+        if (state.yellowSlipPhase === "sign") {
+            const passed = Math.random() < 0.5;
+            state.yellowSlipPhase = "signing";
+            showYellowSlipScreen("signing", state.yellowSlipReason);
+            window.setTimeout(() => showYellowSlipResult(passed), YELLOW_SLIP_SIGN_REVEAL_MS);
+            return;
+        }
+        if (state.yellowSlipPhase === "signing") return;
+
+        if (state.yellowSlipPhase === "passed") {
+            hideMenuOverlay();
+            state.health = Math.max(1, Math.ceil(getBasePlayerHealth() / 2));
+            clearPlayerDanger(true);
+            state.yellowSlipPhase = "idle";
+            state.yellowSlipReason = "";
+            state.status = "playing";
+            state.lastTime = performance.now();
+            syncHud();
+            return;
+        }
+
+        state.yellowSlipPhase = "idle";
+        state.yellowSlipReason = "";
+        state.status = "gameover";
+        showMenuScreen();
+    });
+}
 
 makeCourtMarks();
-resetGame();
+updateCharacterPanel();
+showLoadingScreen();
 state.lastTime = performance.now();
 requestAnimationFrame(loop);
