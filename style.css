@@ -57,6 +57,21 @@ body::before {
     box-shadow: 3px 3px 0 rgba(15, 23, 42, 0.28);
 }
 
+.arcade-btn.is-pressing,
+.touch-btn.is-pressing,
+.menu-card.is-pressing,
+.character-choice.is-pressing,
+.upgrade-card.is-pressing,
+.reroll-btn.is-pressing {
+    animation: button-press-pop 140ms ease-out;
+    filter: brightness(1.12) saturate(1.12);
+}
+
+.arcade-btn.is-pressing,
+.touch-btn.is-pressing {
+    box-shadow: 1px 1px 0 rgba(15, 23, 42, 0.34);
+}
+
 .arcade-btn {
     min-width: 96px;
     padding: 0.78rem 1.1rem;
@@ -451,6 +466,40 @@ body::before {
     text-align: center;
 }
 
+.character-loading-view {
+    display: grid;
+    justify-items: center;
+}
+
+.character-loading-card {
+    display: grid;
+    justify-items: center;
+    gap: 0.85rem;
+    width: min(100%, 18rem);
+    border: 3px solid rgb(251, 191, 36);
+    border-radius: 8px;
+    background: rgba(251, 191, 36, 0.16);
+    padding: 1.15rem;
+    box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.34);
+}
+
+.character-loading-card .character-choice-portrait {
+    width: 7.6rem;
+}
+
+.character-loading-card p {
+    color: rgb(253, 230, 138);
+    font-size: 0.9rem;
+    font-weight: 900;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+}
+
+.character-loading-card p::after {
+    content: "";
+    animation: loading-dots 1.2s steps(4, end) infinite;
+}
+
 .menu-card.selected,
 .character-choice.selected {
     border-color: rgb(251, 191, 36);
@@ -620,6 +669,39 @@ body::before {
 .touch-btn:active {
     transform: translateY(-1px);
     filter: brightness(1.04);
+}
+
+@keyframes button-press-pop {
+    0% {
+        transform: translate(0, 0) scale(1);
+    }
+
+    45% {
+        transform: translate(2px, 2px) scale(0.97);
+    }
+
+    100% {
+        transform: translate(0, 0) scale(1);
+    }
+}
+
+@keyframes loading-dots {
+    0% {
+        content: "";
+    }
+
+    25% {
+        content: ".";
+    }
+
+    50% {
+        content: "..";
+    }
+
+    75%,
+    100% {
+        content: "...";
+    }
 }
 
 canvas {

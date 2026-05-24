@@ -56,6 +56,7 @@ const spriteSources = {
     player3Throw: "assets/player3-throw.png",
     player3Pe: "assets/player3-pe.png",
     player3PeThrow: "assets/player3-pe-throw.png",
+    player3Domain: "assets/player3Domain.png",
     companion: "assets/companion.png",
     companionThrow: "assets/companion-throw.png",
     enemyRed: "assets/student-red.png",
@@ -108,6 +109,7 @@ const BASE_PLAYER_HEALTH = 3;
 const BOSS_REWARD_HEALTH = 2;
 const BOSS_REWARD_COINS = 5;
 const BOSS_REWARD_OVERLAY_MS = 2600;
+const MUSIC_FADE_MS = 1000;
 const STUDENT_LAPS_BEFORE_SWARM = 3;
 const ENEMY_THROW_PRESSURE_MULTIPLIER = 1.10;
 const ENEMY_RANDOM_AIM_CHANCE = 0.24;
@@ -137,6 +139,12 @@ const FIRST_SHOP_FREE_CARD_LIMIT = 2;
 const MAX_NEW_BUFF_STACKS = 4;
 const MAX_BALL_BUFF_STACKS = 4;
 const MAX_SOCCERBALL_BUFF_STACKS = 2;
+const CHARACTER_SELECT_DELAY_MS = 4000;
+const PLAYER_ABILITY_KILL_CHARGE = 15;
+const PLAYER3_DOMAIN_ROUND_CHARGE = 5;
+const PLAYER3_DOMAIN_INTRO_MS = 3000;
+const PLAYER3_DOMAIN_FREEZE_MS = 10000;
+const PLAYER3_DOMAIN_IMAGE_FADE_MS = 1000;
 const POWER_UP_TYPES = {
     SIOMAI: "siomaiRice",
     COFFEE: "icedCoffee",
@@ -185,6 +193,274 @@ Object.entries(spriteSources).forEach(([name, src]) => {
     image.src = src;
     sprites[name] = image;
 });
+
+// ===== AUDIO SYSTEM =====
+// Replace these URLs with your actual audio links
+const audioSources = {
+    // Music (Background Music - Set volume to 0.3-0.5)
+    menuMusic: "assets/audio/menu.mp3",
+    fieldMusic: "assets/audio/field.mp3",
+    bossMusic: "assets/audio/boss.mp3",
+    
+    // SFX - Player Actions
+    uiPress: "assets/audio/uiPress1.mp3",
+    player1Select: "assets/audio/playerSelect1.mp3",
+    player2Select: "assets/audio/playerSelect2.mp3",
+    player3Select: "assets/audio/playerSelect3.mp3",
+    playerThrow: "assets/audio/playerThrow.mp3",
+    player1Ability: "assets/audio/player1Ability.mp3",
+    player2Ability: "assets/audio/player2Ability.mp3",
+    player3Domain: "assets/audio/player3Domain.mp3",
+    abilityNotReady: "assets/audio/abilityNotReady.mp3",
+    playerHit: "assets/audio/playerHit1.mp3",
+    playerDefeated: "assets/audio/playerDefeated1.mp3",
+
+    // SFX - Shop
+    shopSelect: "assets/audio/shopSelect.mp3",
+    cardPick: "assets/audio/cardSelect.mp3",
+    yellowSlipSelect: "assets/audio/yellowSlipSelect.mp3",
+    
+    // SFX - Yellow Slip
+    yellowSlipBase: "assets/audio/yellowSlipBase.mp3",
+    yellowSlipFailed: "assets/audio/yellowSlipFailed.mp3",
+    yellowSlipPassed: "assets/audio/yellowSlipPassed.mp3",
+
+    // SFX - Powerups & Items
+    siomaiPickup: "assets/audio/siomaiPickup.mp3",
+    coffeePickup: "assets/audio/coffeePickup.mp3",
+    coinPickup: "assets/audio/coinPickup.mp3",
+    peUniformPickup: "assets/audio/peUniformPickup.mp3",
+
+    // SFX - Boss
+    enemyEliminated: "assets/audio/enemyEliminated.mp3",
+    bossEliminated: "assets/audio/bossEliminated.mp3",
+    bossDefeated: "assets/audio/bossDefeated.mp3",
+    chalkFire: "assets/audio/chalkFire.mp3"
+};
+
+const audio = {};
+const bgMusicVolumes = {
+    menuMusic: 0.32,
+    fieldMusic: 0.28,
+    bossMusic: 0.28
+};
+const audioStartOffsets = {
+    uiPress: 0.3
+};
+const activeSounds = {};
+let currentBgMusic = null;
+let currentBgMusicName = null;
+let pendingBgMusicName = null;
+let buttonAudioContext = null;
+let characterSelectTimeoutId = null;
+const skippedAudioWarnings = new Set();
+const failedAudioWarnings = new Set();
+
+function isPlayableAudioSource(src) {
+    return typeof src === "string" &&
+        src.trim() !== "" &&
+        !src.includes("your-sound-url") &&
+        /\.(mp3|wav|ogg|m4a)(\?.*)?$/i.test(src);
+}
+
+function warnSkippedAudio(name, src) {
+    if (skippedAudioWarnings.has(name)) return;
+    skippedAudioWarnings.add(name);
+    console.warn(`Skipping ${name}: use a direct .mp3, .wav, .ogg, or .m4a file instead of ${src}`);
+}
+
+function warnAudioPlayFailure(name, err) {
+    if (failedAudioWarnings.has(name)) return;
+    failedAudioWarnings.add(name);
+    console.log(`${name} audio play failed:`, err);
+}
+
+// Initialize audio objects
+Object.entries(audioSources).forEach(([name, src]) => {
+    if (!isPlayableAudioSource(src)) return;
+    const audioElement = new Audio();
+    audioElement.src = src;
+    audioElement.crossOrigin = "anonymous";
+    audioElement.preload = "auto";
+    audio[name] = audioElement;
+});
+
+// Set background music volumes lower
+Object.entries(bgMusicVolumes).forEach(([name, volume]) => {
+    if (audio[name]) audio[name].volume = volume;
+});
+
+// Helper functions for audio
+function playSound(soundName, volume = 1.0) {
+    if (!audio[soundName]) {
+        warnSkippedAudio(soundName, audioSources[soundName]);
+        return false;
+    }
+    const sound = audio[soundName].cloneNode();
+    sound.volume = volume;
+    if (audioStartOffsets[soundName]) {
+        sound.currentTime = audioStartOffsets[soundName];
+    }
+    activeSounds[soundName] = sound;
+    sound.addEventListener("ended", () => {
+        if (activeSounds[soundName] === sound) activeSounds[soundName] = null;
+    });
+    sound.play().catch(err => warnAudioPlayFailure(soundName, err));
+    return true;
+}
+
+function stopSound(soundName) {
+    const sound = activeSounds[soundName];
+    if (!sound) return;
+    sound.pause();
+    sound.currentTime = 0;
+    activeSounds[soundName] = null;
+}
+
+function playGeneratedButtonPress() {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    if (!buttonAudioContext) buttonAudioContext = new AudioContext();
+
+    const now = buttonAudioContext.currentTime;
+    const oscillator = buttonAudioContext.createOscillator();
+    const gain = buttonAudioContext.createGain();
+
+    oscillator.type = "square";
+    oscillator.frequency.setValueAtTime(420, now);
+    oscillator.frequency.exponentialRampToValueAtTime(170, now + 0.055);
+    gain.gain.setValueAtTime(0.045, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.065);
+
+    oscillator.connect(gain);
+    gain.connect(buttonAudioContext.destination);
+    oscillator.start(now);
+    oscillator.stop(now + 0.07);
+}
+
+function playButtonPress() {
+    if (!audio.uiPress) {
+        playGeneratedButtonPress();
+        return;
+    }
+
+    const sound = audio.uiPress.cloneNode();
+    sound.volume = 0.55;
+    sound.currentTime = audioStartOffsets.uiPress || 0;
+    sound.play().catch(() => playGeneratedButtonPress());
+}
+
+function animateButtonPress(button) {
+    button.classList.remove("is-pressing");
+    void button.offsetWidth;
+    button.classList.add("is-pressing");
+    window.setTimeout(() => button.classList.remove("is-pressing"), 140);
+}
+
+function getPressedButton(target) {
+    const button = target.closest("button, .menu-card, .character-choice, .upgrade-card, .reroll-btn");
+    if (!button || button.disabled || button.getAttribute("aria-disabled") === "true") return null;
+    if (button.matches("[data-menu-action='confirm-character']")) return null;
+    return button;
+}
+
+function getBgMusicVolume(musicName) {
+    return bgMusicVolumes[musicName] || 0.4;
+}
+
+function fadeAudio(audioElement, toVolume, durationMs, onComplete) {
+    if (!audioElement) return;
+    const fadeToken = Symbol("audioFade");
+    audioElement.fadeToken = fadeToken;
+
+    const fromVolume = audioElement.volume;
+    const startedAt = performance.now();
+
+    const step = (timestamp) => {
+        if (audioElement.fadeToken !== fadeToken) return;
+
+        const progress = clamp((timestamp - startedAt) / durationMs, 0, 1);
+        audioElement.volume = fromVolume + (toVolume - fromVolume) * progress;
+
+        if (progress < 1) {
+            requestAnimationFrame(step);
+            return;
+        }
+
+        audioElement.volume = toVolume;
+        if (onComplete) onComplete();
+    };
+
+    requestAnimationFrame(step);
+}
+
+function playBgMusic(musicName) {
+    pendingBgMusicName = musicName;
+    if (!audio[musicName]) {
+        warnSkippedAudio(musicName, audioSources[musicName]);
+        return;
+    }
+    if (currentBgMusic === audio[musicName] && !currentBgMusic.paused) {
+        fadeAudio(currentBgMusic, getBgMusicVolume(musicName), MUSIC_FADE_MS);
+        return;
+    }
+
+    const previousMusic = currentBgMusic;
+    const previousName = currentBgMusicName;
+    if (previousMusic && previousMusic !== audio[musicName]) {
+        fadeAudio(previousMusic, 0, MUSIC_FADE_MS, () => {
+            if (currentBgMusic !== previousMusic) {
+                previousMusic.pause();
+                previousMusic.currentTime = 0;
+                previousMusic.volume = getBgMusicVolume(previousName);
+            }
+        });
+    }
+
+    currentBgMusic = audio[musicName];
+    currentBgMusicName = musicName;
+    currentBgMusic.loop = true;
+    currentBgMusic.volume = 0;
+    currentBgMusic.play()
+        .then(() => {
+            pendingBgMusicName = null;
+            fadeAudio(currentBgMusic, getBgMusicVolume(musicName), MUSIC_FADE_MS);
+        })
+        .catch(err => console.log("Music play failed:", err));
+}
+
+function pauseBgMusic() {
+    if (!currentBgMusic) return;
+    const musicToPause = currentBgMusic;
+    fadeAudio(musicToPause, 0, MUSIC_FADE_MS, () => {
+        if (currentBgMusic === musicToPause) musicToPause.pause();
+    });
+}
+
+function resumeBgMusic() {
+    if (currentBgMusic) {
+        currentBgMusic.play()
+            .then(() => fadeAudio(currentBgMusic, getBgMusicVolume(currentBgMusicName), MUSIC_FADE_MS))
+            .catch(err => console.log("Music play failed:", err));
+    } else if (pendingBgMusicName) {
+        playBgMusic(pendingBgMusicName);
+    }
+}
+
+function stopBgMusic() {
+    if (currentBgMusic) {
+        const musicToStop = currentBgMusic;
+        const musicName = currentBgMusicName;
+        fadeAudio(musicToStop, 0, MUSIC_FADE_MS, () => {
+            musicToStop.pause();
+            musicToStop.currentTime = 0;
+            musicToStop.volume = getBgMusicVolume(musicName);
+        });
+        currentBgMusic = null;
+        currentBgMusicName = null;
+    }
+    pendingBgMusicName = null;
+}
 
 function loadUnlocks() {
     const defaults = {
@@ -337,6 +613,9 @@ const state = {
     bossRewardTimer: 0,
     completedLevels: 0,
     cardSelectionsShown: 0,
+    abilityCharge: 0,
+    domainIntroTimer: 0,
+    domainFreezeTimer: 0,
     courtMarks: [],
     playerBalls: [],
     enemyBalls: [],
@@ -580,6 +859,26 @@ function getModeLabel() {
     return state.adventureDifficulty === "hard" ? "Adventure Hard" : "Adventure Easy";
 }
 
+function getAbilityThreshold() {
+    return state.selectedCharacter === "player3" ? PLAYER3_DOMAIN_ROUND_CHARGE : PLAYER_ABILITY_KILL_CHARGE;
+}
+
+function getAbilityChargeFill() {
+    return clamp(state.abilityCharge / getAbilityThreshold(), 0, 1);
+}
+
+function isAbilityReady() {
+    return state.abilityCharge >= getAbilityThreshold();
+}
+
+function addAbilityCharge(amount) {
+    state.abilityCharge = Math.min(getAbilityThreshold(), state.abilityCharge + amount);
+}
+
+function isDomainFreezing() {
+    return state.selectedCharacter === "player3" && state.domainFreezeTimer > 0;
+}
+
 function isAdventureComplete() {
     return state.gameMode === "adventure" && state.completedLevels >= getAdventureLimit();
 }
@@ -749,11 +1048,13 @@ function applyPowerUp(type) {
     if (type === POWER_UP_TYPES.SIOMAI) {
         state.playerUpgrades.siomaiShieldRounds = 1;
         burst(player.x + player.width / 2, player.y + player.height / 2, "#22c55e");
+        playSound('siomaiPickup', 0.7);
     }
 
     if (type === POWER_UP_TYPES.COFFEE) {
         state.playerUpgrades.coffeeRounds = 2;
         burst(player.x + player.width / 2, player.y + player.height / 2, "#92400e");
+        playSound('coffeePickup', 0.7);
     }
 
     if (type === POWER_UP_TYPES.DODGEBALL) {
@@ -775,11 +1076,13 @@ function applyPowerUp(type) {
     if (type === POWER_UP_TYPES.PE_UNIFORM) {
         state.playerUpgrades.peUniformStacks++;
         burst(player.x + player.width / 2, player.y + player.height / 2, "#0ea5e9");
+        playSound('peUniformPickup', 0.7);
     }
 
     if (type === POWER_UP_TYPES.YELLOW_SLIP) {
         state.playerUpgrades.yellowSlipStacks = 1;
         burst(player.x + player.width / 2, player.y + player.height / 2, "#facc15");
+        playSound('yellowSlipSelect', 0.7);
     }
 
     if (type === POWER_UP_TYPES.THROW_SPEED) {
@@ -875,6 +1178,7 @@ function showCardChoices() {
     hideOverlay();
     hideMenuOverlay();
     state.cardSelectionsShown++;
+    playSound('shopSelect', 0.6);
     
     // Generate shop cards while ensuring no duplicates
     const selectedPowers = new Set();
@@ -982,6 +1286,9 @@ function buyShopCard(slotIndex) {
     const card = state.shopCards[slotIndex];
     if (!canBuyShopCard(card)) return;
 
+    if (card.type !== POWER_UP_TYPES.YELLOW_SLIP) {
+        playSound('cardPick', 0.6);
+    }
     state.coins -= card.cost;
     if (!applyPowerUp(card.type)) {
         state.coins += card.cost;
@@ -1136,11 +1443,13 @@ function showMenuOverlay() {
 }
 
 function showMenuScreen() {
+    clearCharacterSelectDelay();
     state.status = "menu";
     state.menuPhase = "home";
     hideOverlay();
     hideCardChoices();
     showMenuOverlay();
+    playBgMusic('menuMusic');
     if (loadingView) loadingView.classList.add("hidden");
     if (storyView) storyView.classList.add("hidden");
     if (yellowSlipView) yellowSlipView.classList.add("hidden");
@@ -1169,6 +1478,24 @@ function showLoadingScreen() {
 
 function renderModeMenu() {
     if (!menuView) return;
+
+    if (state.menuPhase === "characterLoading") {
+        const config = getCharacterConfig(state.selectedCharacter);
+        const source = spriteSources[`${config.id}Pe`] || spriteSources[config.id] || spriteSources.player;
+        menuView.innerHTML = `
+            <div class="character-loading-view text-center">
+                <p class="text-sm font-black uppercase tracking-[0.28em] text-amber-200">Player Selected</p>
+                <h2 class="mt-2 text-4xl font-black uppercase text-white sm:text-6xl">${config.name}</h2>
+                <div class="character-loading-card mt-6">
+                    <span class="character-choice-portrait sprite-icon">
+                        <img src="${source}" alt="${config.name}" onerror="this.style.display='none'">
+                    </span>
+                    <p>Loading</p>
+                </div>
+            </div>
+        `;
+        return;
+    }
 
     if (state.menuPhase === "home") {
         menuView.innerHTML = `
@@ -1255,7 +1582,7 @@ function renderModeMenu() {
             }).join("")}
         </div>
         <div class="mt-6 flex flex-wrap gap-3">
-            <button class="arcade-btn bg-amber-300 text-slate-950 hover:bg-amber-200" data-menu-action="level-selection" type="button">Level Selection</button>
+            <button class="arcade-btn bg-amber-300 text-slate-950 hover:bg-amber-200" data-menu-action="confirm-character" type="button">Confirm</button>
             <button class="arcade-btn bg-slate-100 text-slate-950 hover:bg-white" data-menu-action="home" type="button">Back</button>
         </div>
     `;
@@ -1265,6 +1592,37 @@ function selectMode(mode, difficulty = "easy") {
     state.selectedMode = mode;
     state.adventureDifficulty = difficulty;
     renderModeMenu();
+}
+
+function clearCharacterSelectDelay() {
+    if (!characterSelectTimeoutId) return;
+    window.clearTimeout(characterSelectTimeoutId);
+    characterSelectTimeoutId = null;
+}
+
+function getCharacterSelectSoundName(characterId) {
+    const charNum = characterId.replace("player", "").replace(/\D/g, "") || "1";
+    return `player${charNum}Select`;
+}
+
+function beginCharacterSelection(characterId) {
+    const config = getCharacterConfig(characterId);
+    if (!config.unlocked || state.menuPhase === "characterLoading") return;
+
+    clearCharacterSelectDelay();
+    state.selectedCharacter = config.id;
+    playSound(getCharacterSelectSoundName(config.id), 0.8);
+    updateCharacterPanel();
+
+    state.menuPhase = "characterLoading";
+    renderModeMenu();
+
+    characterSelectTimeoutId = window.setTimeout(() => {
+        characterSelectTimeoutId = null;
+        if (state.status !== "menu" || state.menuPhase !== "characterLoading") return;
+        state.menuPhase = "mode";
+        renderModeMenu();
+    }, CHARACTER_SELECT_DELAY_MS);
 }
 
 function showStoryScreen() {
@@ -1312,6 +1670,9 @@ function resetGame() {
     state.bossRewardTimer = 0;
     state.completedLevels = 0;
     state.cardSelectionsShown = 0;
+    state.abilityCharge = 0;
+    state.domainIntroTimer = 0;
+    state.domainFreezeTimer = 0;
     state.playerBalls = [];
     state.enemyBalls = [];
     state.coinsVisuals = [];
@@ -1375,11 +1736,77 @@ function startGame() {
 function togglePause() {
     if (state.status === "playing") {
         state.status = "paused";
+        pauseBgMusic();
         showOverlay("Paused", "Press P or Pause to continue the match.");
     } else if (state.status === "paused") {
         state.status = "playing";
         state.lastTime = performance.now();
+        resumeBgMusic();
         hideOverlay();
+    }
+}
+
+function fireAbilityDodgeballWave(waveIndex) {
+    const speed = getPlayerProjectileSpeed() * 1.08;
+    const spreadAngles = [-0.18, 0, 0.18];
+    const originX = player.x + player.width / 2;
+    const originY = player.y + 10;
+
+    spreadAngles.forEach((angle, index) => {
+        const laneOffset = (index - 1) * 11;
+        state.playerBalls.push({
+            x: originX + laneOffset,
+            y: originY,
+            radius: 13,
+            vx: Math.sin(angle) * speed,
+            vy: -Math.cos(angle) * speed,
+            spin: 0,
+            owner: "player",
+            powerUpType: POWER_UP_TYPES.DODGEBALL,
+            bouncesLeft: 0,
+            color: "#dc2626",
+            spawnDelay: waveIndex * 220
+        });
+    });
+}
+
+function triggerPlayerAbility() {
+    if (state.status !== "playing") return;
+    if (!isAbilityReady()) {
+        playSound('abilityNotReady', 0.65);
+        return;
+    }
+
+    if (state.selectedCharacter === "player1") {
+        const maxHealHealth = 5;
+        if (state.health >= maxHealHealth) {
+            playSound('abilityNotReady', 0.65);
+            return;
+        }
+        state.health = Math.min(maxHealHealth, state.health + 1);
+        state.abilityCharge = 0;
+        playSound('player1Ability', 0.75);
+        burst(player.x + player.width / 2, player.y + player.height / 2, "#22c55e");
+        floatText(player.x + player.width / 2, player.y - 16, "+1 HP", "#22c55e");
+        syncHud();
+        return;
+    }
+
+    if (state.selectedCharacter === "player2") {
+        state.abilityCharge = 0;
+        playSound('player2Ability', 0.78);
+        fireAbilityDodgeballWave(0);
+        fireAbilityDodgeballWave(1);
+        player.throwPose = 260;
+        return;
+    }
+
+    if (state.selectedCharacter === "player3") {
+        state.abilityCharge = 0;
+        state.domainIntroTimer = PLAYER3_DOMAIN_INTRO_MS;
+        state.domainFreezeTimer = 0;
+        playSound('player3Domain', 0.82);
+        return;
     }
 }
 
@@ -1420,6 +1847,7 @@ function throwPlayerBall() {
 
     state.throwCooldown = getThrowCooldown();
     player.throwPose = 230;
+    playSound('playerThrow', 0.55);
 }
 
 function createCompanion() {
@@ -1565,6 +1993,7 @@ function fireBossChalk() {
     const boss = getBoss();
     if (!boss) return;
 
+    playSound('chalkFire', 0.48);
     boss.throwPose = 260;
 
     const originX = boss.x + boss.width / 2;
@@ -1628,6 +2057,7 @@ function spawnCoins(x, y, amount) {
     state.coins += amount;
     syncHud();
     updatePowerPanel();
+    playSound('coinPickup', 0.6);
 
     for (let i = 0; i < amount; i++) {
         state.coinsVisuals.push({
@@ -1720,6 +2150,11 @@ function showYellowSlipScreen(phase, reasonTitle, effect = "") {
 function showYellowSlipResult(passed) {
     state.yellowSlipPassed = passed;
     state.yellowSlipPhase = passed ? "passed" : "failed";
+    if (passed) {
+        playSound('yellowSlipPassed', 0.8);
+    } else {
+        playSound('yellowSlipFailed', 0.8);
+    }
     showYellowSlipScreen(state.yellowSlipPhase, state.yellowSlipReason, "reveal");
 }
 
@@ -1731,6 +2166,7 @@ function tryYellowSlip(reasonTitle) {
     state.yellowSlipPassed = false;
     state.yellowSlipPhase = "sign";
     state.yellowSlipReason = reasonTitle;
+    playSound('yellowSlipBase', 0.7);
     showYellowSlipScreen("sign", reasonTitle);
     updatePowerPanel();
     syncHud();
@@ -1765,10 +2201,14 @@ function loseHealth() {
     }
 
     state.health--;
+    playSound('playerHit', 0.7);
     burst(player.x + player.width / 2, player.y + player.height / 2, "#ef4444");
     syncHud();
 
     if (state.health <= 0) {
+        if (!state.unlocks.yellowSlip || state.playerUpgrades.yellowSlipStacks <= 0) {
+            playSound('playerDefeated', 0.8);
+        }
         finishKnockout("Knocked Out", `Final score: ${state.score}. Press Start for a rematch.`);
         return;
     }
@@ -1821,10 +2261,15 @@ function nextRound() {
         }
     }
     state.round++;
+    if (state.selectedCharacter === "player3") {
+        addAbilityCharge(1);
+    }
     state.score += 250 * state.round;
     state.playerBalls = [];
     state.enemyBalls = [];
     state.powerUps = [];
+    state.domainIntroTimer = 0;
+    state.domainFreezeTimer = 0;
     state.playerUpgrades.coffeeRounds = Math.max(0, state.playerUpgrades.coffeeRounds - 1);
     state.playerUpgrades.siomaiShieldRounds = Math.max(0, state.playerUpgrades.siomaiShieldRounds - 1);
     state.bossChalkTimer = BOSS_CHALK_ATTACK_MS;
@@ -1883,6 +2328,12 @@ function updateGame(deltaMs) {
         if (state.transitionTimer <= 0) {
             state.status = "playing";
             state.transitionTimer = 0;
+            // Play appropriate background music
+            if (isBossRound()) {
+                playBgMusic('bossMusic');
+            } else {
+                playBgMusic('fieldMusic');
+            }
         }
         return;
     }
@@ -1898,6 +2349,16 @@ function updateGame(deltaMs) {
 
     if (state.status !== "playing") return;
 
+    if (state.domainIntroTimer > 0) {
+        state.domainIntroTimer = Math.max(0, state.domainIntroTimer - deltaMs);
+        if (state.domainIntroTimer <= 0) {
+            state.domainFreezeTimer = PLAYER3_DOMAIN_FREEZE_MS;
+        }
+    } else if (state.domainFreezeTimer > 0) {
+        state.domainFreezeTimer = Math.max(0, state.domainFreezeTimer - deltaMs);
+    }
+    const domainFreezing = isDomainFreezing();
+
     state.playerSlowTimer = Math.max(0, state.playerSlowTimer - deltaMs);
 
     const playerSpeed = getPlayerSpeed();
@@ -1911,7 +2372,13 @@ function updateGame(deltaMs) {
 
     state.throwCooldown = Math.max(0, state.throwCooldown - deltaMs);
 
-    state.students.forEach((student) => {
+    if (domainFreezing) {
+        state.students.forEach((student) => {
+            if (student.active) student.invulnTimer = Math.max(0, student.invulnTimer - deltaMs);
+        });
+    }
+
+    if (!domainFreezing) state.students.forEach((student) => {
         if (!student.active) return;
         student.wobble += deltaSeconds * 5;
         student.stunned = Math.max(0, student.stunned - deltaMs);
@@ -1981,7 +2448,7 @@ function updateGame(deltaMs) {
         }
     });
 
-    state.sidelineEnemies.forEach((enemy) => {
+    if (!domainFreezing) state.sidelineEnemies.forEach((enemy) => {
         if (!enemy.active) return;
 
         const sideTop = canvas.height * 0.54;
@@ -2028,39 +2495,42 @@ function updateGame(deltaMs) {
         }
     }
 
-    const activeThrowers = state.students.filter((student) => student.active && !student.swarming);
-    activeThrowers.forEach((student) => {
-        if (student.stunned > 0) return;
-        student.throwTimer -= deltaMs;
-        if (student.throwTimer <= 0) {
-            fireEnemyProjectile(student);
-            student.throwTimer = getEnemyPersonalThrowInterval(activeThrowers.length);
-        }
-    });
+    if (!domainFreezing) {
+        const activeThrowers = state.students.filter((student) => student.active && !student.swarming);
+        activeThrowers.forEach((student) => {
+            if (student.stunned > 0) return;
+            student.throwTimer -= deltaMs;
+            if (student.throwTimer <= 0) {
+                fireEnemyProjectile(student);
+                student.throwTimer = getEnemyPersonalThrowInterval(activeThrowers.length);
+            }
+        });
 
-    const boss = getBoss();
-    if (boss) {
-        state.bossChalkTimer -= deltaMs;
-        if (state.bossChalkTimer <= 0 && state.bossChalkShots <= 0) {
-            state.bossChalkShots = 3;
+        const boss = getBoss();
+        if (boss) {
+            state.bossChalkTimer -= deltaMs;
+            if (state.bossChalkTimer <= 0 && state.bossChalkShots <= 0) {
+                state.bossChalkShots = 3;
+                state.bossChalkShotTimer = 0;
+                state.bossChalkTimer = BOSS_CHALK_ATTACK_MS;
+            }
+        } else {
+            state.bossChalkShots = 0;
             state.bossChalkShotTimer = 0;
-            state.bossChalkTimer = BOSS_CHALK_ATTACK_MS;
         }
-    } else {
-        state.bossChalkShots = 0;
-        state.bossChalkShotTimer = 0;
-    }
 
-    if (state.bossChalkShots > 0) {
-        state.bossChalkShotTimer -= deltaMs;
-        if (state.bossChalkShotTimer <= 0) {
-            fireBossChalk();
-            state.bossChalkShots--;
-            state.bossChalkShotTimer = 170;
+        if (state.bossChalkShots > 0) {
+            state.bossChalkShotTimer -= deltaMs;
+            if (state.bossChalkShotTimer <= 0) {
+                fireBossChalk();
+                state.bossChalkShots--;
+                state.bossChalkShotTimer = 170;
+            }
         }
     }
 
-    [...state.playerBalls, ...state.enemyBalls].forEach((ball) => {
+    const movingBalls = domainFreezing ? state.playerBalls : [...state.playerBalls, ...state.enemyBalls];
+    movingBalls.forEach((ball) => {
         if (ball.spawnDelay > 0) {
             ball.spawnDelay -= deltaMs;
             return;
@@ -2132,7 +2602,11 @@ function updateGame(deltaMs) {
 
         if (hit.hp <= 0) {
             hit.active = false;
+            if (state.selectedCharacter === "player1" || state.selectedCharacter === "player2") {
+                addAbilityCharge(1);
+            }
             state.score += hit.points;
+            playSound(hit.type === "teacher" ? 'bossEliminated' : 'enemyEliminated', hit.type === "teacher" ? 0.8 : 0.585);
             burst(hit.x + hit.width / 2, hit.y + hit.height / 2, hit.type === "teacher" ? "#0284c7" : "#f97316");
             maybeDropCoins(hit);
             if (hit.heldPowerUp) {
@@ -2146,35 +2620,37 @@ function updateGame(deltaMs) {
         syncHud();
     }
 
-    for (let b = state.enemyBalls.length - 1; b >= 0; b--) {
-        const ball = state.enemyBalls[b];
-        if (ball.spawnDelay > 0) continue;
-        if (state.companion && state.companion.active && projectileOverlapsRect(ball, hitbox(state.companion))) {
-            state.enemyBalls.splice(b, 1);
-            if (Math.random() < COMPANION_DODGE_CHANCE) {
-                showDodged(state.companion);
-                burst(state.companion.x + state.companion.width / 2, state.companion.y + state.companion.height / 2, "#38bdf8");
+    if (!domainFreezing) {
+        for (let b = state.enemyBalls.length - 1; b >= 0; b--) {
+            const ball = state.enemyBalls[b];
+            if (ball.spawnDelay > 0) continue;
+            if (state.companion && state.companion.active && projectileOverlapsRect(ball, hitbox(state.companion))) {
+                state.enemyBalls.splice(b, 1);
+                if (Math.random() < COMPANION_DODGE_CHANCE) {
+                    showDodged(state.companion);
+                    burst(state.companion.x + state.companion.width / 2, state.companion.y + state.companion.height / 2, "#38bdf8");
+                    continue;
+                }
+                showTagged(state.companion);
+                state.companion.hp--;
+                burst(state.companion.x + state.companion.width / 2, state.companion.y + state.companion.height / 2, "#ef4444");
+                if (state.companion.hp <= 0) state.companion.active = false;
                 continue;
             }
-            showTagged(state.companion);
-            state.companion.hp--;
-            burst(state.companion.x + state.companion.width / 2, state.companion.y + state.companion.height / 2, "#ef4444");
-            if (state.companion.hp <= 0) state.companion.active = false;
-            continue;
-        }
 
-        if (projectileOverlapsRect(ball, hitbox(player))) {
-            state.enemyBalls.splice(b, 1);
-            if (Math.random() < getPlayerProjectileDodgeChance()) {
-                burst(player.x + player.width / 2, player.y + player.height / 2, "#c084fc");
-                showDodged(player);
-                continue;
+            if (projectileOverlapsRect(ball, hitbox(player))) {
+                state.enemyBalls.splice(b, 1);
+                if (Math.random() < getPlayerProjectileDodgeChance()) {
+                    burst(player.x + player.width / 2, player.y + player.height / 2, "#c084fc");
+                    showDodged(player);
+                    continue;
+                }
+                if (ball.type === "chalk") {
+                    state.playerSlowTimer = PLAYER_SLOW_MS;
+                }
+                loseHealth();
+                break;
             }
-            if (ball.type === "chalk") {
-                state.playerSlowTimer = PLAYER_SLOW_MS;
-            }
-            loseHealth();
-            break;
         }
     }
 
@@ -2195,7 +2671,7 @@ function updateGame(deltaMs) {
         }
     }
 
-    const swarmed = state.students.some((student) => (
+    const swarmed = !domainFreezing && state.students.some((student) => (
         student.active &&
         student.swarming &&
         rectsOverlap(hitbox(student), hitbox(player))
@@ -3082,8 +3558,60 @@ function drawThrowBar() {
     ctx.restore();
 }
 
+function drawAbilityBar() {
+    const meterWidth = 76;
+    const meterHeight = 5;
+    const x = player.x + player.width / 2 - meterWidth / 2;
+    const y = player.y + player.height + 30;
+    const fill = getAbilityChargeFill();
+
+    ctx.save();
+    ctx.fillStyle = "rgba(15, 23, 42, 0.48)";
+    ctx.fillRect(x - 2, y - 2, meterWidth + 4, meterHeight + 4);
+    ctx.fillStyle = fill >= 1 ? "#ef4444" : "#ffffff";
+    ctx.fillRect(x, y, meterWidth * fill, meterHeight);
+    ctx.strokeStyle = "#111827";
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(x - 2, y - 2, meterWidth + 4, meterHeight + 4);
+    ctx.fillStyle = "#111827";
+    ctx.font = "900 8px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.fillText("Q", x + meterWidth / 2, y + meterHeight + 2);
+    ctx.restore();
+}
+
+function drawDomainBackdrop() {
+    if (state.selectedCharacter !== "player3") return;
+    if (state.domainIntroTimer <= 0 && state.domainFreezeTimer <= 0) return;
+
+    const introProgress = state.domainIntroTimer > 0
+        ? 1 - state.domainIntroTimer / PLAYER3_DOMAIN_INTRO_MS
+        : 1;
+    const radius = Math.hypot(canvas.width, canvas.height) * clamp(introProgress, 0, 1);
+    const centerX = player.x + player.width / 2;
+    const centerY = player.y + player.height / 2;
+    const image = sprites.player3Domain;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.fillStyle = "rgba(0, 0, 0, 0.96)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    if (state.domainIntroTimer <= 0 && hasSprite(image)) {
+        const imageFade = clamp((PLAYER3_DOMAIN_FREEZE_MS - state.domainFreezeTimer) / PLAYER3_DOMAIN_IMAGE_FADE_MS, 0, 1);
+        ctx.globalAlpha = imageFade;
+        ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+        ctx.globalAlpha = 1;
+    }
+    ctx.restore();
+}
+
 function draw() {
     drawCourt();
+    drawDomainBackdrop();
     state.students.forEach((student) => {
         drawEnemy(student);
         drawHealthBar(student);
@@ -3105,6 +3633,7 @@ function draw() {
     drawParticles();
     drawFloatTexts();
     drawThrowBar();
+    drawAbilityBar();
     drawRoundTransition();
     drawBossRewardOverlay();
 }
@@ -3122,6 +3651,10 @@ document.addEventListener("keydown", (event) => {
     if (event.key === "ArrowRight" || event.key.toLowerCase() === "d") keys.right = true;
     if (event.key === "ArrowUp" || event.key.toLowerCase() === "w") keys.up = true;
     if (event.key === "ArrowDown" || event.key.toLowerCase() === "s") keys.down = true;
+    if (event.key.toLowerCase() === "q" && !event.repeat) {
+        triggerPlayerAbility();
+        event.preventDefault();
+    }
     if (event.code === "Space") {
         if (!event.repeat) {
             if (state.status === "paused") {
@@ -3143,6 +3676,21 @@ document.addEventListener("keyup", (event) => {
     if (event.key === "ArrowRight" || event.key.toLowerCase() === "d") keys.right = false;
     if (event.key === "ArrowUp" || event.key.toLowerCase() === "w") keys.up = false;
     if (event.key === "ArrowDown" || event.key.toLowerCase() === "s") keys.down = false;
+});
+document.addEventListener("pointerdown", resumeBgMusic, { once: true });
+document.addEventListener("keydown", resumeBgMusic, { once: true });
+document.addEventListener("pointerdown", (event) => {
+    const button = getPressedButton(event.target);
+    if (!button) return;
+    playButtonPress();
+    animateButtonPress(button);
+});
+document.addEventListener("keydown", (event) => {
+    if (event.repeat || (event.key !== "Enter" && event.key !== " ")) return;
+    const button = getPressedButton(event.target);
+    if (!button) return;
+    playButtonPress();
+    animateButtonPress(button);
 });
 
 function holdButton(button, keyName) {
@@ -3212,6 +3760,7 @@ if (menuView) {
     menuView.addEventListener("click", (event) => {
         const actionButton = event.target.closest("[data-menu-action]");
         if (actionButton) {
+            clearCharacterSelectDelay();
             const action = actionButton.dataset.menuAction;
             if (action === "new-game" || action === "level-selection") state.menuPhase = "mode";
             if (action === "home") state.menuPhase = "home";
@@ -3219,7 +3768,11 @@ if (menuView) {
             if (action === "characters") state.menuPhase = "character";
             if (action === "credits") state.menuPhase = "credits";
             if (action === "confirm-mode") state.menuPhase = "character";
-            if (action === "confirm-character" || action === "start-run") {
+            if (action === "confirm-character") {
+                beginCharacterSelection(state.selectedCharacter);
+                return;
+            }
+            if (action === "start-run") {
                 startSelectedRun();
                 return;
             }
@@ -3229,6 +3782,7 @@ if (menuView) {
 
         const modeButton = event.target.closest("[data-mode]");
         if (modeButton) {
+            clearCharacterSelectDelay();
             selectMode(modeButton.dataset.mode, modeButton.dataset.difficulty || "easy");
             return;
         }
@@ -3236,7 +3790,7 @@ if (menuView) {
         const button = event.target.closest("[data-character]");
         if (!button || button.disabled) return;
         const config = getCharacterConfig(button.dataset.character);
-        if (!config.unlocked) return;
+        if (!config.unlocked || state.menuPhase === "characterLoading") return;
         state.selectedCharacter = config.id;
         renderModeMenu();
         updateCharacterPanel();
@@ -3245,6 +3799,7 @@ if (menuView) {
 if (yellowSlipBtn) {
     yellowSlipBtn.addEventListener("click", () => {
         if (state.yellowSlipPhase === "sign") {
+            stopSound('yellowSlipBase');
             const passed = Math.random() < 0.5;
             state.yellowSlipPhase = "signing";
             showYellowSlipScreen("signing", state.yellowSlipReason);
