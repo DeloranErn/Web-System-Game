@@ -10,6 +10,7 @@ const overlayTitle = document.getElementById("overlayTitle");
 const overlayText = document.getElementById("overlayText");
 const overlayActions = document.getElementById("overlayActions");
 const powerList = document.getElementById("powerList");
+const milestoneBar = document.getElementById("milestoneBar");
 const characterPanel = document.getElementById("characterPanel");
 const coinText = document.getElementById("coinText");
 const cardOverlay = document.getElementById("cardOverlay");
@@ -94,7 +95,9 @@ const spriteSources = {
     icedCoffeeIndicator: "assets/iced-coffee-indicator.png",
     volleyball: "assets/player-volleyball.png",
     soccerball: "assets/player-soccerball.png",
-    peUniform: "assets/pe-uniform.png"
+    peUniform: "assets/pe-uniform.png",
+    player2Projectile: "assets/player2-projectile.png",
+    player3Projectile: "assets/player3-projectile.png"
 };
 
 const BASE_STUDENT_COUNT = 3;
@@ -111,6 +114,7 @@ const BOSS_REWARD_COINS = 5;
 const BOSS_REWARD_OVERLAY_MS = 2600;
 const MUSIC_FADE_MS = 1000;
 const STUDENT_LAPS_BEFORE_SWARM = 3;
+const EASY_SWARM_STUN_MS = 3000;
 const ENEMY_THROW_PRESSURE_MULTIPLIER = 1.10;
 const ENEMY_RANDOM_AIM_CHANCE = 0.24;
 const ENEMY_PREDICTIVE_AIM_CHANCE = 0.34;
@@ -145,6 +149,12 @@ const PLAYER3_DOMAIN_ROUND_CHARGE = 5;
 const PLAYER3_DOMAIN_INTRO_MS = 3000;
 const PLAYER3_DOMAIN_FREEZE_MS = 10000;
 const PLAYER3_DOMAIN_IMAGE_FADE_MS = 1000;
+const PLAYER_ABILITY_HEAL_CAP = 5;
+const CHARACTER_LIMITS = {
+    player1: { maxHealth: 6, peUniform: 3, siomai: 2 },
+    player2: { maxHealth: 8, peUniform: 4, siomai: 3 },
+    player3: { maxHealth: 10, peUniform: 4, siomai: 3 }
+};
 const POWER_UP_TYPES = {
     SIOMAI: "siomaiRice",
     COFFEE: "icedCoffee",
@@ -530,6 +540,26 @@ function getCharacterConfig(characterId) {
     return configs[characterId] || configs.player1;
 }
 
+function getCharacterLimits(characterId = state.selectedCharacter) {
+    return CHARACTER_LIMITS[characterId] || CHARACTER_LIMITS.player1;
+}
+
+function getMaxBaseHealth() {
+    return getCharacterLimits().maxHealth;
+}
+
+function getMaxPeUniformStacks() {
+    return getCharacterLimits().peUniform;
+}
+
+function getMaxSiomaiStacks() {
+    return getCharacterLimits().siomai;
+}
+
+function clampPlayerHealth() {
+    state.health = clamp(state.health, 0, getMaxBaseHealth());
+}
+
 function getCharacterStatMultiplier() {
     return getCharacterConfig(state.selectedCharacter).statMultiplier || 1;
 }
@@ -800,7 +830,8 @@ function getLevelScale() {
 
 function getEnemyThrowInterval() {
     const fireRateSteps = Math.floor((state.round - 1) / 4);
-    const fireRateMultiplier = Math.pow(0.92, fireRateSteps);
+    const level25Pressure = state.round >= 25 ? Math.pow(0.94, Math.floor((state.round - 25) / 5) + 1) : 1;
+    const fireRateMultiplier = Math.pow(0.92, fireRateSteps) * level25Pressure;
     return Math.max(440, (1450 - state.round * 70) * fireRateMultiplier);
 }
 
@@ -822,6 +853,17 @@ function getCoinDropChance(enemy) {
 
 function getStudentDodgeChance() {
     return state.round <= 10 ? 0.10 : 0.12;
+}
+
+function getBossProjectileSpeedMultiplier() {
+    const difficulty = getEffectiveDifficulty();
+    const difficultyMultiplier = difficulty === "easy" ? 0.75 : 1;
+    return difficultyMultiplier * getEndlessBossBallSpeedMultiplier();
+}
+
+function getStudentSwarmLapThreshold() {
+    const difficulty = getEffectiveDifficulty();
+    return difficulty === "easy" ? 4 : 3;
 }
 
 function canStudentDodge(student) {
@@ -854,8 +896,43 @@ function getAdventureLimit() {
     return state.adventureDifficulty === "hard" ? 30 : 20;
 }
 
+function getEffectiveDifficulty() {
+    if (state.gameMode === "adventure") {
+        return state.adventureDifficulty;
+    }
+    // Endless mode: Easy for levels 1-15, Hard for 16+
+    return state.round <= 15 ? "easy" : "hard";
+}
+
+function getBossAppearance() {
+    return Math.max(1, Math.floor(state.round / 5));
+}
+
+function getEndlessBossMovementMultiplier() {
+    if (state.gameMode !== "endless") return 1;
+    return 1 + (getBossAppearance() - 1) * 0.05;
+}
+
+function getEndlessBossBallSpeedMultiplier() {
+    if (state.gameMode !== "endless") return 1;
+    return Math.min(1, 0.8 + (getBossAppearance() - 1) * 0.05);
+}
+
+function getEndlessBossChalkSpeedMultiplier() {
+    if (state.gameMode !== "endless") return 1;
+    return Math.min(1, 0.6 + (getBossAppearance() - 1) * 0.10);
+}
+
+function getBossDodgeChance() {
+    if (state.gameMode !== "endless") return 0;
+    return Math.min(0.40, (getBossAppearance() - 1) * 0.10);
+}
+
 function getModeLabel() {
-    if (state.gameMode !== "adventure") return "Endless";
+    if (state.gameMode !== "adventure") {
+        const difficulty = getEffectiveDifficulty();
+        return difficulty === "hard" ? "Endless (Hard)" : "Endless";
+    }
     return state.adventureDifficulty === "hard" ? "Adventure Hard" : "Adventure Easy";
 }
 
@@ -942,12 +1019,15 @@ function getPlayerProjectileDodgeChance() {
 function getTeacherHp() {
     const bossNumber = Math.floor(state.round / 5);
     const listedHp = TEACHER_HP_BY_APPEARANCE[bossNumber - 1];
-    const endlessBonus = state.gameMode === "endless" && state.round >= 25 ? 5 : 0;
+    if (state.gameMode === "endless") {
+        const baseHp = (listedHp || TEACHER_HP_BY_APPEARANCE[TEACHER_HP_BY_APPEARANCE.length - 1]) + 6;
+        return baseHp + (bossNumber - 1) * 7;
+    }
 
-    if (listedHp) return listedHp + 6 + endlessBonus;
+    if (listedHp) return listedHp + 6;
 
     const lastListedHp = TEACHER_HP_BY_APPEARANCE[TEACHER_HP_BY_APPEARANCE.length - 1];
-    return lastListedHp + 6 + endlessBonus + (bossNumber - TEACHER_HP_BY_APPEARANCE.length) * 4;
+    return lastListedHp + 6 + (bossNumber - TEACHER_HP_BY_APPEARANCE.length) * 4;
 }
 
 function randomPowerUpPosition() {
@@ -993,6 +1073,8 @@ function canApplyPowerUp(type) {
     if (type === POWER_UP_TYPES.DODGEBALL) return state.playerUpgrades.dodgeballStacks < MAX_BALL_BUFF_STACKS;
     if (type === POWER_UP_TYPES.VOLLEYBALL) return state.playerUpgrades.volleyballStacks < MAX_BALL_BUFF_STACKS;
     if (type === POWER_UP_TYPES.SOCCERBALL) return state.playerUpgrades.soccerStacks < MAX_SOCCERBALL_BUFF_STACKS;
+    if (type === POWER_UP_TYPES.PE_UNIFORM) return state.playerUpgrades.peUniformStacks < getMaxPeUniformStacks();
+    if (type === POWER_UP_TYPES.SIOMAI) return state.playerUpgrades.siomaiShieldRounds < getMaxSiomaiStacks();
     return true;
 }
 
@@ -1014,13 +1096,16 @@ function getShopPoolForSlot(slotIndex) {
     return slotIndex === 0 ? BALL_POWER_TYPES : SHOP_MIXED_POWER_TYPES;
 }
 
-function pickShopPower(slotIndex, currentType = "") {
-    let pool = getAvailableShopPoolForSlot(slotIndex).filter((type) => type !== currentType && canApplyPowerUp(type));
+function pickShopPower(slotIndex, currentType = "", excludedTypes = []) {
+    const excluded = new Set(excludedTypes);
+    let pool = getAvailableShopPoolForSlot(slotIndex).filter((type) => type !== currentType && !excluded.has(type) && canApplyPowerUp(type));
+    if (!pool.length) pool = getAvailableShopPoolForSlot(slotIndex).filter((type) => type !== currentType && !excluded.has(type));
     if (!pool.length) pool = getAvailableShopPoolForSlot(slotIndex).filter((type) => type !== currentType);
     return pickWeightedShopPower(pool);
 }
 
 function pickWeightedShopPower(pool) {
+    if (!pool.length) return POWER_UP_TYPES.COFFEE;
     const totalWeight = pool.reduce((total, type) => total + (SHOP_POWER_WEIGHTS[type] || 1), 0);
     let roll = Math.random() * totalWeight;
 
@@ -1046,7 +1131,7 @@ function applyPowerUp(type) {
     if (!canApplyPowerUp(type)) return false;
 
     if (type === POWER_UP_TYPES.SIOMAI) {
-        state.playerUpgrades.siomaiShieldRounds = 1;
+        state.playerUpgrades.siomaiShieldRounds = Math.min(getMaxSiomaiStacks(), state.playerUpgrades.siomaiShieldRounds + 1);
         burst(player.x + player.width / 2, player.y + player.height / 2, "#22c55e");
         playSound('siomaiPickup', 0.7);
     }
@@ -1156,7 +1241,7 @@ function getPowerUpDetails(type) {
     if (type === POWER_UP_TYPES.PE_UNIFORM) {
         return {
             title: "PE Uniform",
-            description: "Armor, speed, and throw rate."
+            description: `Blocks one hit. Speed and throw rate up. Max ${getMaxPeUniformStacks()}.`
         };
     }
     if (type === POWER_UP_TYPES.YELLOW_SLIP) {
@@ -1167,7 +1252,9 @@ function getPowerUpDetails(type) {
     }
     return {
         title: getPowerUpName(type),
-        description: ""
+        description: type === POWER_UP_TYPES.SIOMAI
+            ? `Blocks one hit before PE Uniform. Max ${getMaxSiomaiStacks()}.`
+            : ""
     };
 }
 
@@ -1180,13 +1267,9 @@ function showCardChoices() {
     state.cardSelectionsShown++;
     playSound('shopSelect', 0.6);
     
-    // Generate shop cards while ensuring no duplicates
     const selectedPowers = new Set();
     state.shopCards = [0, 1, 2].map((slotIndex) => {
-        let power = pickShopPower(slotIndex);
-        while (selectedPowers.has(power)) {
-            power = pickShopPower(slotIndex);
-        }
+        const power = pickShopPower(slotIndex, "", selectedPowers);
         selectedPowers.add(power);
         return makeShopCard(power);
     });
@@ -1230,8 +1313,8 @@ function renderShopCards() {
     const rerollCost = getRerollCost();
     if (cardCostText) {
         cardCostText.textContent = state.cardSelectionsShown === 1
-            ? `First shop: pick ${FIRST_SHOP_FREE_CARD_LIMIT} free cards max | Coins: ${state.coins}`
-            : `Reroll: ${SHOP_REROLL_COST} coins | Coins: ${state.coins}`;
+            ? `First shop: choose up to ${FIRST_SHOP_FREE_CARD_LIMIT} free cards. One ball upgrade, up to ${SHOP_NEW_BUFF_LIMIT} training buffs. Coins: ${state.coins}`
+            : `Shop rules: buy one ball upgrade, up to ${SHOP_NEW_BUFF_LIMIT} training buffs, and any affordable item. Rerolls: ${SHOP_REROLL_COST} coins. Coins: ${state.coins}`;
     }
 
     cardChoices.innerHTML = state.shopCards.map((card, slotIndex) => {
@@ -1265,17 +1348,10 @@ function rerollShopSlot(slotIndex) {
     state.coins -= cost;
     state.shopRerolledSlots[slotIndex] = true;
     const currentType = state.shopCards[slotIndex]?.type || "";
-    
-    // Get other selected powers to avoid duplicates
     const otherPowers = state.shopCards
         .filter((_, idx) => idx !== slotIndex)
-        .map(card => card.type)
-        .join("||");
-    
-    let newPower = pickShopPower(slotIndex, currentType);
-    while (state.shopCards.some((card, idx) => idx !== slotIndex && card.type === newPower)) {
-        newPower = pickShopPower(slotIndex, currentType);
-    }
+        .map((card) => card.type);
+    const newPower = pickShopPower(slotIndex, currentType, otherPowers);
     
     state.shopCards[slotIndex] = makeShopCard(newPower);
     syncHud();
@@ -1307,12 +1383,14 @@ function buyShopCard(slotIndex) {
 
 function createStudents() {
     state.students = [];
-    const count = BASE_STUDENT_COUNT + state.round - 1;
+    const count = BASE_STUDENT_COUNT + Math.min(state.round - 1, 24);
     const columns = Math.min(9, count);
     const gapX = 76;
     const gapY = 64;
     const speedScale = getLevelScale();
-    const studentHp = state.round > 25 ? 3 : state.round > 5 ? 2 : 1;
+    const studentHp = state.round >= 25
+        ? Math.min(7, 3 + Math.floor((state.round - 25) / 10))
+        : state.round > 5 ? 2 : 1;
 
     for (let i = 0; i < count; i++) {
         const row = Math.floor(i / columns);
@@ -1355,7 +1433,7 @@ function createStudents() {
             hitboxPad: 14,
             direction: 1,
             verticalDirection: Math.random() < 0.5 ? -1 : 1,
-            speed: 32 * speedScale,
+            speed: 32 * speedScale * getEndlessBossMovementMultiplier(),
             wobble: 0,
             sprite: "teacher",
             throwPose: 0,
@@ -1408,6 +1486,26 @@ function syncHud() {
     if (livesText) livesText.textContent = getEffectivePlayerHealth();
     if (cooldownText) cooldownText.textContent = state.throwCooldown <= 0 ? "Ready" : `${Math.ceil(state.throwCooldown / 1000)}s`;
     if (coinText) coinText.textContent = `Coins: ${state.coins}`;
+    updateMilestoneBar();
+}
+
+function updateMilestoneBar() {
+    if (!milestoneBar) return;
+
+    const start = Math.max(1, state.round - 2);
+    const levels = Array.from({ length: 10 }, (_, index) => start + index);
+    milestoneBar.innerHTML = levels.map((level) => {
+        const isCurrent = level === state.round;
+        const isBoss = level % 5 === 0;
+        const isShop = level > 1 && (level - 1) % 2 === 0;
+        const label = isBoss ? "Boss" : isShop ? "Shop" : "Level";
+        return `
+            <div class="milestone-step ${isCurrent ? "current" : ""} ${isShop ? "shop" : ""} ${isBoss ? "boss" : ""}">
+                <strong>${level}</strong>
+                <span>${isCurrent ? "Now" : label}</span>
+            </div>
+        `;
+    }).join("");
 }
 
 function showOverlay(title, text, actions = []) {
@@ -1464,6 +1562,12 @@ function hideMenuOverlay() {
     if (gameShell) gameShell.classList.remove("menu-active");
 }
 
+function getTutorialIconMarkup(spriteName, fallbackText) {
+    const source = spriteSources[spriteName];
+    if (!source) return `<span class="tutorial-icon">${fallbackText}</span>`;
+    return `<span class="tutorial-icon"><img src="${source}" alt="" onerror="this.style.display='none'; this.parentElement.textContent='${fallbackText}'"></span>`;
+}
+
 function showLoadingScreen() {
     state.status = "loading";
     hideOverlay();
@@ -1507,9 +1611,9 @@ function renderModeMenu() {
                         <span>Level Selection</span>
                         <small>Pick Endless or Adventure and start the match.</small>
                     </button>
-                    <button class="menu-card" data-menu-action="characters" type="button">
-                        <span>Characters</span>
-                        <small>View stats and choose your player.</small>
+                    <button class="menu-card" data-menu-action="tutorial" type="button">
+                        <span>Game Tutorial</span>
+                        <small>Learn how to play STI Dodgeball.</small>
                     </button>
                     <button class="menu-card" data-menu-action="credits" type="button">
                         <span>Credits</span>
@@ -1525,8 +1629,28 @@ function renderModeMenu() {
         menuView.innerHTML = `
             <p class="text-sm font-black uppercase tracking-[0.28em] text-emerald-300">Level Selection</p>
             <h2 class="mt-2 text-4xl font-black uppercase text-white sm:text-6xl">Choose Run</h2>
-            <p class="mt-2 text-sm font-black uppercase tracking-wide text-slate-200">Character: ${getCharacterConfig(state.selectedCharacter).name}</p>
-            <div class="mt-6 grid gap-3 sm:grid-cols-3">
+            
+            <div class="mt-6">
+                <p class="text-xs font-black uppercase tracking-[0.18em] text-slate-400 mb-2">Character</p>
+                <div class="grid gap-2 sm:grid-cols-3 mb-6">
+                    ${["player1", "player2", "player3"].map((characterId) => {
+                        const config = getCharacterConfig(characterId);
+                        const selected = state.selectedCharacter === characterId;
+                        const source = spriteSources[config.base] || spriteSources.player1;
+                        return `
+                            <button class="character-choice ${selected ? "selected" : ""}" data-character="${characterId}" type="button" ${config.unlocked ? "" : "disabled"} style="padding: 0.75rem; font-size: 0.875rem;">
+                                <span class="character-choice-portrait sprite-icon" style="width: 32px; height: 32px; margin: 0 auto;">
+                                    <img src="${source}" alt="${config.name}" onerror="this.style.display='none'" style="width: 100%; height: 100%;">
+                                </span>
+                                <span>${config.name}</span>
+                            </button>
+                        `;
+                    }).join("")}
+                </div>
+            </div>
+            
+            <p class="text-xs font-black uppercase tracking-[0.18em] text-slate-400 mb-3">Game Mode</p>
+            <div class="grid gap-3 sm:grid-cols-3">
                 <button class="menu-card ${state.selectedMode === "endless" ? "selected" : ""}" data-mode="endless" type="button">
                     <span>Endless Mode</span>
                     <small>No level cap. Current full game loop.</small>
@@ -1548,6 +1672,47 @@ function renderModeMenu() {
         return;
     }
 
+    if (state.menuPhase === "tutorial") {
+        menuView.innerHTML = `
+            <div class="text-center">
+                <p class="text-sm font-black uppercase tracking-[0.28em] text-blue-300">How To Play</p>
+                <h2 class="mt-2 text-4xl font-black uppercase text-white sm:text-5xl">Game Tutorial</h2>
+                <div class="tutorial-grid mt-6 mx-auto max-w-4xl">
+                    <div class="tutorial-card">
+                        ${getTutorialIconMarkup("player1", "WASD")}
+                        <div><h3>Movement</h3><p><strong>WASD</strong> or <strong>Arrow Keys</strong>. Stay moving, dodge throws, and keep space from swarming students.</p></div>
+                    </div>
+                    <div class="tutorial-card">
+                        ${getTutorialIconMarkup("ball", "SPC")}
+                        <div><h3>Throw</h3><p><strong>Space</strong> fires when the cooldown bar is ready. Player 2 throws piercing basketballs. Player 3 throws energy balls.</p></div>
+                    </div>
+                    <div class="tutorial-card">
+                        ${getTutorialIconMarkup("player3Domain", "Q")}
+                        <div><h3>Ability</h3><p><strong>Q</strong> spends charge. Player 1 heals, Player 2 heals and fires piercing waves, Player 3 heals and freezes the court.</p></div>
+                    </div>
+                    <div class="tutorial-card">
+                        ${getTutorialIconMarkup("coinIcon", "SHOP")}
+                        <div><h3>Locker Shop</h3><p>Shops appear after every 2 cleared levels. First shop gives up to ${FIRST_SHOP_FREE_CARD_LIMIT} free cards. Later shops spend coins; skip is button-only.</p></div>
+                    </div>
+                    <div class="tutorial-card">
+                        ${getTutorialIconMarkup("dodgeballBuffIcon", "BUFF")}
+                        <div><h3>Power Ups</h3><p>Ball upgrades change throws. Training buffs improve speed, throw rate, projectile speed, or dodge chance. PE and Siomai block hits.</p></div>
+                    </div>
+                    <div class="tutorial-card">
+                        ${getTutorialIconMarkup("enemyRed", "ENEMY")}
+                        <div><h3>Students</h3><p>Students throw, dodge, and count laps. Easy swarms stun and deal 1 HP; Hard swarms are lethal.</p></div>
+                    </div>
+                    <div class="tutorial-card">
+                        ${getTutorialIconMarkup("teacher", "BOSS")}
+                        <div><h3>Boss Levels</h3><p>Bosses appear every 5 levels. Easy projectiles are slower. Endless bosses ramp HP, speed, and dodge chance.</p></div>
+                    </div>
+                </div>
+                <button class="arcade-btn mt-8 bg-slate-100 text-slate-950 hover:bg-white" data-menu-action="home" type="button">Back to Menu</button>
+            </div>
+        `;
+        return;
+    }
+
     if (state.menuPhase === "credits") {
         menuView.innerHTML = `
             <div class="text-center">
@@ -1557,6 +1722,66 @@ function renderModeMenu() {
                     <p>Credits placeholder. Add names, art notes, music, and special thanks here.</p>
                 </div>
                 <button class="arcade-btn mt-6 bg-slate-100 text-slate-950 hover:bg-white" data-menu-action="home" type="button">Back</button>
+            </div>
+        `;
+        return;
+    }
+
+    if (state.menuPhase === "tutorial") {
+        menuView.innerHTML = `
+            <div class="text-center max-h-screen overflow-y-auto">
+                <p class="text-sm font-black uppercase tracking-[0.28em] text-blue-300">How To Play</p>
+                <h2 class="mt-2 text-4xl font-black uppercase text-white sm:text-5xl">Game Tutorial</h2>
+                
+                <div class="mt-8 grid gap-6 text-left max-w-4xl mx-auto">
+                    <!-- Movements -->
+                    <div class="bg-slate-700 p-6 rounded-lg border-2 border-slate-600">
+                        <h3 class="text-xl font-black uppercase text-emerald-300 mb-3">Movements</h3>
+                        <p class="text-white mb-2"><strong>WASD</strong> or <strong>Arrow Keys</strong> - Move left, right, up, down</p>
+                        <p class="text-slate-300 text-sm">Avoid enemy dodgeballs by moving around the court. Stay away from students crossing the center line!</p>
+                    </div>
+                    
+                    <!-- Throw -->
+                    <div class="bg-slate-700 p-6 rounded-lg border-2 border-slate-600">
+                        <h3 class="text-xl font-black uppercase text-orange-300 mb-3">Throw</h3>
+                        <p class="text-white mb-2"><strong>Space Bar</strong> or <strong>Fire Button</strong> - Throw dodgeball</p>
+                        <p class="text-slate-300 text-sm">Throw to eliminate enemies and score points. Each throw has a cooldown - wait for the cooldown to reset before throwing again.</p>
+                    </div>
+                    
+                    <!-- Ability -->
+                    <div class="bg-slate-700 p-6 rounded-lg border-2 border-slate-600">
+                        <h3 class="text-xl font-black uppercase text-purple-300 mb-3">Player Ability</h3>
+                        <p class="text-white mb-2"><strong>Q Key</strong> - Trigger player ability</p>
+                        <p class="text-slate-300 text-sm">Each player has a unique ability:<br>
+                        <strong>Player 1:</strong> Heal +1 HP (max 5)<br>
+                        <strong>Player 2:</strong> Fire piercing projectiles + Heal<br>
+                        <strong>Player 3:</strong> Domain ability (freezes enemies) + Heal</p>
+                    </div>
+                    
+                    <!-- Shop -->
+                    <div class="bg-slate-700 p-6 rounded-lg border-2 border-slate-600">
+                        <h3 class="text-xl font-black uppercase text-amber-300 mb-3">Locker Shop</h3>
+                        <p class="text-white mb-2">After each round, visit the Locker Shop to upgrade your abilities.</p>
+                        <p class="text-slate-300 text-sm">Choose from power-ups:<br>
+                        ⚽ <strong>Dodgeball</strong> - Spread your throws<br>
+                        🏐 <strong>Volleyball</strong> - Larger projectiles<br>
+                        ⚽ <strong>Soccer Ball</strong> - Follow-up shots<br>
+                        🚀 <strong>Speed Buffs</strong> - Throw/Movement/Projectile speed<br>
+                        🎽 <strong>PE Uniform</strong> - Block one hit<br>
+                        📝 <strong>Yellow Slip</strong> - Second chance on knockout</p>
+                    </div>
+                    
+                    <!-- Enemy Mechanics -->
+                    <div class="bg-slate-700 p-6 rounded-lg border-2 border-slate-600">
+                        <h3 class="text-xl font-black uppercase text-red-300 mb-3">Enemy Mechanics</h3>
+                        <p class="text-white mb-2 font-bold">Students:</p>
+                        <p class="text-slate-300 text-sm mb-4">Regular enemies that throw dodgeballs at you. If they complete 3-4 laps across the court (depending on difficulty), they swarm you!</p>
+                        <p class="text-white mb-2 font-bold">Teacher (Boss):</p>
+                        <p class="text-slate-300 text-sm">Stronger enemy that appears at the end of each level. Harder to defeat but worth more points. In Easy mode, projectiles are 25% slower!</p>
+                    </div>
+                </div>
+                
+                <button class="arcade-btn mt-8 bg-slate-100 text-slate-950 hover:bg-white" data-menu-action="home" type="button">Back to Menu</button>
             </div>
         `;
         return;
@@ -1746,7 +1971,8 @@ function togglePause() {
     }
 }
 
-function fireAbilityDodgeballWave(waveIndex) {
+function fireAbilityDodgeballWave(waveIndex, options = {}) {
+    const { piercing = false, character = null } = options;
     const speed = getPlayerProjectileSpeed() * 1.08;
     const spreadAngles = [-0.18, 0, 0.18];
     const originX = player.x + player.width / 2;
@@ -1754,7 +1980,7 @@ function fireAbilityDodgeballWave(waveIndex) {
 
     spreadAngles.forEach((angle, index) => {
         const laneOffset = (index - 1) * 11;
-        state.playerBalls.push({
+        const projectile = {
             x: originX + laneOffset,
             y: originY,
             radius: 13,
@@ -1763,10 +1989,17 @@ function fireAbilityDodgeballWave(waveIndex) {
             spin: 0,
             owner: "player",
             powerUpType: POWER_UP_TYPES.DODGEBALL,
+            character: character || state.selectedCharacter,
             bouncesLeft: 0,
             color: "#dc2626",
-            spawnDelay: waveIndex * 220
-        });
+            spawnDelay: waveIndex * 220,
+            followPlayerOrigin: waveIndex > 0,
+            laneOffset,
+            originYOffset: 10
+        };
+        if (piercing) projectile.piercing = true;
+        if (character) projectile.character = character;
+        state.playerBalls.push(projectile);
     });
 }
 
@@ -1778,7 +2011,7 @@ function triggerPlayerAbility() {
     }
 
     if (state.selectedCharacter === "player1") {
-        const maxHealHealth = 5;
+        const maxHealHealth = Math.min(PLAYER_ABILITY_HEAL_CAP, getMaxBaseHealth());
         if (state.health >= maxHealHealth) {
             playSound('abilityNotReady', 0.65);
             return;
@@ -1793,15 +2026,31 @@ function triggerPlayerAbility() {
     }
 
     if (state.selectedCharacter === "player2") {
+        const maxHealHealth = Math.min(PLAYER_ABILITY_HEAL_CAP, getMaxBaseHealth());
+        const healAmount = Math.max(0, maxHealHealth - state.health);
+        if (healAmount > 0) {
+            state.health = Math.min(maxHealHealth, state.health + 1);
+            burst(player.x + player.width / 2, player.y + player.height / 2, "#22c55e");
+            floatText(player.x + player.width / 2, player.y - 16, "+1 HP", "#22c55e");
+            syncHud();
+        }
         state.abilityCharge = 0;
         playSound('player2Ability', 0.78);
-        fireAbilityDodgeballWave(0);
-        fireAbilityDodgeballWave(1);
+        fireAbilityDodgeballWave(0, { piercing: true, character: "player2" });
+        fireAbilityDodgeballWave(1, { piercing: true, character: "player2" });
         player.throwPose = 260;
         return;
     }
 
     if (state.selectedCharacter === "player3") {
+        const maxHealHealth = Math.min(PLAYER_ABILITY_HEAL_CAP, getMaxBaseHealth());
+        const healAmount = Math.max(0, maxHealHealth - state.health);
+        if (healAmount > 0) {
+            state.health = Math.min(maxHealHealth, state.health + 1);
+            burst(player.x + player.width / 2, player.y + player.height / 2, "#22c55e");
+            floatText(player.x + player.width / 2, player.y - 16, "+1 HP", "#22c55e");
+            syncHud();
+        }
         state.abilityCharge = 0;
         state.domainIntroTimer = PLAYER3_DOMAIN_INTRO_MS;
         state.domainFreezeTimer = 0;
@@ -1838,9 +2087,14 @@ function throwPlayerBall() {
                 spin: 0,
                 owner: "player",
                 powerUpType,
+                character: state.selectedCharacter,
+                piercing: state.selectedCharacter === "player2",
                 bouncesLeft: Math.random() < bounceChance ? 1 : 0,
                 color: state.playerUpgrades.latestBallColor,
-                spawnDelay: trail * 200
+                spawnDelay: trail * 200,
+                followPlayerOrigin: trail > 0,
+                laneOffset,
+                originYOffset: 10
             });
         }
     }
@@ -1948,7 +2202,9 @@ function fireEnemyProjectile(student, spawnDelay = 0) {
 
     const originX = student.x + student.width / 2;
     const originY = student.y + student.height - 8;
-    const speed = (student.type === "teacher" ? 285 : 245) * getLevelScale();
+    const baseSpeed = (student.type === "teacher" ? 285 : 245) * getLevelScale();
+    const speedMultiplier = student.type === "teacher" ? getBossProjectileSpeedMultiplier() : 1;
+    const speed = baseSpeed * speedMultiplier;
     const target = getEnemyAimPoint(originX, originY, speed);
     const angle = Math.atan2(target.y - originY, target.x - originX);
 
@@ -2001,7 +2257,8 @@ function fireBossChalk() {
     const targetX = player.x + player.width / 2;
     const targetY = player.y + player.height / 2;
     const angle = Math.atan2(targetY - originY, targetX - originX);
-    const speed = 520 * getLevelScale();
+    const easyMultiplier = getEffectiveDifficulty() === "easy" ? 0.75 : 1;
+    const speed = 520 * getLevelScale() * easyMultiplier * getEndlessBossChalkSpeedMultiplier();
 
     state.enemyBalls.push({
         x: originX,
@@ -2185,7 +2442,7 @@ function finishKnockout(title, text) {
 function loseHealth() {
     showTagged(player);
     if (state.playerUpgrades.siomaiShieldRounds > 0) {
-        state.playerUpgrades.siomaiShieldRounds = 0;
+        state.playerUpgrades.siomaiShieldRounds--;
         burst(player.x + player.width / 2, player.y + player.height / 2, "#22c55e");
         syncHud();
         updatePowerPanel();
@@ -2282,6 +2539,7 @@ function nextRound() {
 
     if (clearedBoss) {
         state.health += BOSS_REWARD_HEALTH;
+        clampPlayerHealth();
         state.status = "bossReward";
         state.bossRewardTimer = BOSS_REWARD_OVERLAY_MS;
         syncHud();
@@ -2443,7 +2701,7 @@ function updateGame(deltaMs) {
             student.laps++;
         }
 
-        if (student.laps >= STUDENT_LAPS_BEFORE_SWARM && student.type === "student") {
+        if (student.laps >= getStudentSwarmLapThreshold() && student.type === "student") {
             student.swarming = true;
         }
     });
@@ -2533,6 +2791,10 @@ function updateGame(deltaMs) {
     movingBalls.forEach((ball) => {
         if (ball.spawnDelay > 0) {
             ball.spawnDelay -= deltaMs;
+            if (ball.followPlayerOrigin) {
+                ball.x = player.x + player.width / 2 + (ball.laneOffset || 0);
+                ball.y = player.y + (ball.originYOffset || 10);
+            }
             return;
         }
 
@@ -2591,13 +2853,23 @@ function updateGame(deltaMs) {
             continue;
         }
 
+        if (hit.type === "teacher" && Math.random() < getBossDodgeChance()) {
+            hit.invulnTimer = BOSS_IFRAME_MS;
+            burst(hit.x + hit.width / 2, hit.y + hit.height / 2, "#fca5a5");
+            showDodged(hit);
+            if (!ball.piercing) state.playerBalls.splice(b, 1);
+            continue;
+        }
+
         const damage = hit.type === "teacher" && state.round >= 25 && state.unlocks.bossDamagePlus2 ? 3 : 1;
         hit.hp -= damage;
         showTagged(hit);
         if (hit.type === "teacher") {
             hit.invulnTimer = BOSS_IFRAME_MS;
         }
-        state.playerBalls.splice(b, 1);
+        if (!ball.piercing) {
+            state.playerBalls.splice(b, 1);
+        }
         burst(ball.x, ball.y, hit.type === "teacher" ? "#0ea5e9" : "#f97316");
 
         if (hit.hp <= 0) {
@@ -2671,17 +2943,27 @@ function updateGame(deltaMs) {
         }
     }
 
-    const swarmed = !domainFreezing && state.students.some((student) => (
+    const swarmer = !domainFreezing && state.students.find((student) => (
         student.active &&
         student.swarming &&
         rectsOverlap(hitbox(student), hitbox(player))
     ));
-    if (swarmed) {
-        state.health = 0;
-        state.playerUpgrades.peUniformStacks = 0;
-        state.playerUpgrades.siomaiShieldRounds = 0;
-        syncHud();
-        finishKnockout("Swarmed", `The other team finished 3 laps and rushed you. Final score: ${state.score}.`);
+    if (swarmer) {
+        const difficulty = getEffectiveDifficulty();
+        if (difficulty === "easy") {
+            swarmer.swarming = false;
+            swarmer.laps = 0;
+            swarmer.stunned = EASY_SWARM_STUN_MS;
+            state.playerSlowTimer = EASY_SWARM_STUN_MS;
+            floatText(swarmer.x + swarmer.width / 2, swarmer.y - 12, "Stunned", "#facc15");
+            loseHealth();
+        } else {
+            state.health = 0;
+            state.playerUpgrades.peUniformStacks = 0;
+            state.playerUpgrades.siomaiShieldRounds = 0;
+            syncHud();
+            finishKnockout("Swarmed", `The other team finished 3 laps and rushed you. Final score: ${state.score}.`);
+        }
     }
 
     state.particles.forEach((particle) => {
@@ -2969,7 +3251,7 @@ function drawPlayerHealthBar() {
 }
 
 function drawLapWarning(student) {
-    if (student.type !== "student" || student.laps < STUDENT_LAPS_BEFORE_SWARM - 1) return;
+    if (student.type !== "student" || student.laps < getStudentSwarmLapThreshold() - 1) return;
 
     ctx.save();
     ctx.fillStyle = "#dc2626";
@@ -3196,8 +3478,9 @@ function drawBall(ball) {
         return;
     }
 
+    const playerProjectileSpriteName = getPlayerProjectileSpriteName(ball);
     const playerSprite = ball.owner === "player"
-        ? sprites[getPowerUpSpriteName(ball.powerUpType) || "ball2"]
+        ? sprites[playerProjectileSpriteName || getPowerUpSpriteName(ball.powerUpType) || "ball2"]
         : null;
 
     if (hasSprite(playerSprite)) {
@@ -3221,6 +3504,16 @@ function drawBall(ball) {
     ctx.save();
     ctx.translate(ball.x, ball.y);
     ctx.rotate(ball.spin);
+    if (ball.owner === "player" && ball.character === "player2") {
+        drawBasketballFallback(ball);
+        ctx.restore();
+        return;
+    }
+    if (ball.owner === "player" && ball.character === "player3") {
+        drawEnergyBallFallback(ball);
+        ctx.restore();
+        return;
+    }
     ctx.fillStyle = ball.color || "#f97316";
     ctx.beginPath();
     ctx.arc(0, 0, ball.radius, 0, Math.PI * 2);
@@ -3234,6 +3527,44 @@ function drawBall(ball) {
     ctx.arc(0, 0, ball.radius - 3, Math.PI - 0.8, Math.PI + 0.8);
     ctx.stroke();
     ctx.restore();
+}
+
+function getPlayerProjectileSpriteName(ball) {
+    if (ball.character === "player2") return "player2Projectile";
+    if (ball.character === "player3") return "player3Projectile";
+    return "";
+}
+
+function drawBasketballFallback(ball) {
+    ctx.fillStyle = "#ea580c";
+    ctx.beginPath();
+    ctx.arc(0, 0, ball.radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#111827";
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(0, 0, ball.radius - 3, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-ball.radius + 3, 0);
+    ctx.lineTo(ball.radius - 3, 0);
+    ctx.moveTo(0, -ball.radius + 3);
+    ctx.lineTo(0, ball.radius - 3);
+    ctx.stroke();
+}
+
+function drawEnergyBallFallback(ball) {
+    const glow = ctx.createRadialGradient(0, 0, 2, 0, 0, ball.radius);
+    glow.addColorStop(0, "#ffffff");
+    glow.addColorStop(0.45, "#60a5fa");
+    glow.addColorStop(1, "#7c3aed");
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(0, 0, ball.radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#dbeafe";
+    ctx.lineWidth = 2;
+    ctx.stroke();
 }
 
 function getActiveBallPowerUpType() {
@@ -3267,16 +3598,21 @@ function getPowerUpIconSpriteName(type) {
     return "";
 }
 
-function getPowerUpIconMarkup(type, className = "power-icon") {
+function getPowerUpDescription(type) {
+    return getPowerUpDetails(type).description || getPowerUpName(type);
+}
+
+function getPowerUpIconMarkup(type, className = "power-icon", amount = 0) {
     const spriteName = getPowerUpIconSpriteName(type) || getPowerUpSpriteName(type);
     const source = spriteSources[spriteName];
     const label = getPowerUpLabel(type);
+    const badge = amount > 0 ? `<span class="power-count-badge">x${amount}</span>` : "";
 
     if (source && hasSprite(sprites[spriteName])) {
-        return `<span class="${className} sprite-icon"><img src="${source}" alt="${label}"></span>`;
+        return `<span class="${className} sprite-icon"><img src="${source}" alt="${label}">${badge}</span>`;
     }
 
-    return `<span class="${className}" style="background:${getPowerUpColor(type)}">${label}</span>`;
+    return `<span class="${className}" style="background:${getPowerUpColor(type)}">${label}${badge}</span>`;
 }
 
 function getPowerUpLabel(type) {
@@ -3322,9 +3658,10 @@ function getPowerUpName(type) {
 }
 
 function makePowerPanelRow(type, amount = 0) {
+    const title = `${getPowerUpName(type)}: ${getPowerUpDescription(type)}`;
     return `
-        <div class="power-row">
-            ${getPowerUpIconMarkup(type)}
+        <div class="power-row" title="${title}" aria-label="${title}">
+            ${getPowerUpIconMarkup(type, "power-icon", amount)}
             <span class="power-name" title="${getPowerUpName(type)}">${getPowerUpName(type)}</span>
             <span class="power-amount">x${amount}</span>
         </div>
@@ -3603,10 +3940,23 @@ function drawDomainBackdrop() {
     if (state.domainIntroTimer <= 0 && hasSprite(image)) {
         const imageFade = clamp((PLAYER3_DOMAIN_FREEZE_MS - state.domainFreezeTimer) / PLAYER3_DOMAIN_IMAGE_FADE_MS, 0, 1);
         ctx.globalAlpha = imageFade;
-        ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+        drawImageCover(image, 0, 0, canvas.width, canvas.height);
         ctx.globalAlpha = 1;
     }
     ctx.restore();
+}
+
+function drawImageCover(image, x, y, width, height) {
+    const scale = Math.max(width / image.naturalWidth, height / image.naturalHeight);
+    const drawWidth = image.naturalWidth * scale;
+    const drawHeight = image.naturalHeight * scale;
+    ctx.drawImage(
+        image,
+        x + (width - drawWidth) / 2,
+        y + (height - drawHeight) / 2,
+        drawWidth,
+        drawHeight
+    );
 }
 
 function draw() {
@@ -3659,9 +4009,7 @@ document.addEventListener("keydown", (event) => {
         if (!event.repeat) {
             if (state.status === "paused") {
                 togglePause();
-            } else if (state.status === "card") {
-                skipCardSelection();
-            } else {
+            } else if (state.status !== "card") {
                 throwPlayerBall();
             }
         }
@@ -3766,6 +4114,7 @@ if (menuView) {
             if (action === "home") state.menuPhase = "home";
             if (action === "mode") state.menuPhase = "mode";
             if (action === "characters") state.menuPhase = "character";
+            if (action === "tutorial") state.menuPhase = "tutorial";
             if (action === "credits") state.menuPhase = "credits";
             if (action === "confirm-mode") state.menuPhase = "character";
             if (action === "confirm-character") {

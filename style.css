@@ -77,6 +77,94 @@ body::before {
     padding: 0.78rem 1.1rem;
 }
 
+.pause-button {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    z-index: 30;
+    min-width: 0;
+    padding: 0.55rem 0.78rem;
+    font-size: 0.72rem;
+}
+
+#overlay {
+    z-index: 20;
+}
+
+#cardOverlay,
+#menuOverlay {
+    z-index: 40;
+}
+
+.milestone-bar {
+    display: grid;
+    grid-template-columns: repeat(10, minmax(0, 1fr));
+    gap: 0.35rem;
+    border: 2px solid rgba(15, 23, 42, 0.82);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.82);
+    padding: 0.45rem;
+    box-shadow: 4px 4px 0 rgba(15, 23, 42, 0.16);
+}
+
+.milestone-step {
+    display: grid;
+    min-height: 2.6rem;
+    place-items: center;
+    border: 2px solid rgba(15, 23, 42, 0.22);
+    border-radius: 8px;
+    background: rgba(248, 250, 252, 0.9);
+    color: rgb(15, 23, 42);
+    line-height: 1.05;
+    text-align: center;
+}
+
+.milestone-step strong {
+    font-size: 0.8rem;
+    font-weight: 900;
+}
+
+.milestone-step span {
+    font-size: 0.55rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.milestone-step.current {
+    border-color: rgb(22, 163, 74);
+    background: rgb(220, 252, 231);
+}
+
+.milestone-step.shop {
+    border-color: rgb(217, 119, 6);
+}
+
+.milestone-step.boss {
+    border-color: rgb(220, 38, 38);
+    background: rgb(254, 226, 226);
+}
+
+.control-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem 0.7rem;
+    align-items: center;
+    font-size: 0.98rem;
+    font-weight: 600;
+}
+
+.control-legend span {
+    border: 2px solid rgba(15, 23, 42, 0.78);
+    border-radius: 8px;
+    background: rgb(255, 255, 255);
+    padding: 0.2rem 0.38rem;
+    color: rgb(15, 23, 42);
+    font-size: 0.76rem;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
 .touch-btn {
     min-width: 64px;
     padding: 0.75rem 0.85rem;
@@ -240,6 +328,7 @@ body::before {
 }
 
 .power-icon {
+    position: relative;
     display: grid;
     width: 2.8rem;
     height: 2.8rem;
@@ -250,6 +339,23 @@ body::before {
     font-size: 0.8rem;
     font-weight: 900;
     overflow: hidden;
+}
+
+.power-count-badge {
+    position: absolute;
+    right: 0.12rem;
+    bottom: 0.12rem;
+    display: grid;
+    min-width: 1.08rem;
+    height: 1.08rem;
+    place-items: center;
+    border: 2px solid rgb(15, 23, 42);
+    border-radius: 6px;
+    background: rgb(255, 255, 255);
+    color: rgb(15, 23, 42);
+    font-size: 0.58rem;
+    font-weight: 900;
+    line-height: 1;
 }
 
 .sprite-icon {
@@ -384,16 +490,7 @@ body::before {
 }
 
 .power-amount {
-    display: grid;
-    min-width: 2.1rem;
-    height: 1.35rem;
-    place-items: center;
-    border: 2px solid rgba(15, 23, 42, 0.8);
-    border-radius: 8px;
-    background: white;
-    color: rgb(15, 23, 42);
-    font-size: 0.72rem;
-    font-weight: 900;
+    display: none;
 }
 
 .timer-ring {
@@ -576,6 +673,68 @@ body::before {
     font-size: 1rem;
     font-weight: 800;
     line-height: 1.65;
+}
+
+.tutorial-grid {
+    display: grid;
+    gap: 0.75rem;
+    max-height: min(68vh, 34rem);
+    overflow-y: auto;
+    padding-right: 0.25rem;
+}
+
+.tutorial-card {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.75rem;
+    align-items: center;
+    border: 2px solid rgba(248, 250, 252, 0.78);
+    border-radius: 8px;
+    background: rgba(15, 23, 42, 0.58);
+    padding: 0.75rem;
+    text-align: left;
+}
+
+.tutorial-icon {
+    display: grid;
+    width: 3.4rem;
+    height: 3.4rem;
+    place-items: center;
+    border: 2px solid rgb(248, 250, 252);
+    border-radius: 8px;
+    background: rgb(2, 6, 23);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 900;
+    overflow: hidden;
+}
+
+.tutorial-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    image-rendering: pixelated;
+}
+
+.tutorial-card h3 {
+    margin: 0 0 0.16rem;
+    color: rgb(253, 230, 138);
+    font-size: 0.95rem;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.tutorial-card p {
+    margin: 0;
+    color: rgb(226, 232, 240);
+    font-size: 0.82rem;
+    font-weight: 600;
+    line-height: 1.38;
+}
+
+.tutorial-card strong {
+    color: rgb(255, 255, 255);
+    font-weight: 900;
 }
 
 .main-menu-panel {

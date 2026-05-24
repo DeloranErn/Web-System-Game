@@ -41,8 +41,10 @@
                     </div>
                 </div>
             </div>
+            <div id="milestoneBar" class="milestone-bar mb-3" aria-label="Level milestones"></div>
 
             <div id="gameShell" class="relative overflow-hidden rounded-lg border-4 border-slate-800 bg-[#ead7a6] shadow-[0_18px_45px_rgba(15,23,42,0.22)]">
+                <button id="pauseBtn" class="pause-button arcade-btn bg-sky-700 text-white hover:bg-sky-600" type="button">Pause</button>
                 <canvas id="gameCanvas" width="1080" height="768" class="block aspect-[45/32] w-full"></canvas>
                 <div id="overlay" class="absolute inset-0 hidden items-center justify-center bg-slate-950/60 px-6 text-center">
                     <div>
@@ -94,7 +96,6 @@
             <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
                 <div class="flex flex-wrap gap-2">
                     <button id="startBtn" class="arcade-btn bg-emerald-600 text-white hover:bg-emerald-500">Start</button>
-                    <button id="pauseBtn" class="arcade-btn bg-sky-700 text-white hover:bg-sky-600">Pause</button>
                     <button id="resetBtn" class="arcade-btn bg-slate-800 text-white hover:bg-slate-700">Reset</button>
                     <button id="mainMenuBtn" class="arcade-btn bg-amber-300 text-slate-950 hover:bg-amber-200">Main Menu</button>
                 </div>
@@ -105,7 +106,12 @@
                     <button id="rightBtn" class="touch-btn">Right</button>
                 </div>
 
-                <p class="hidden text-sm font-semibold text-slate-700 sm:block">Move: WASD or Arrow Keys | Throw: Space | Ability: Q | Pause/Unpause: P/Space</p>
+                <p class="control-legend hidden text-slate-700 sm:block">
+                    <span>Move</span> WASD or Arrow Keys
+                    <span>Throw</span> Space
+                    <span>Ability</span> Q
+                    <span>Pause</span> P or button
+                </p>
             </div>
         </section>
         </div>
