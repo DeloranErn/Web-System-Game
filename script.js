@@ -144,7 +144,7 @@ const MAX_NEW_BUFF_STACKS = 4;
 const MAX_BALL_BUFF_STACKS = 4;
 const MAX_SOCCERBALL_BUFF_STACKS = 2;
 const CHARACTER_SELECT_DELAY_MS = 4000;
-const PLAYER_ABILITY_KILL_CHARGE = 15;
+const PLAYER_ABILITY_KILL_CHARGE = 20;
 const PLAYER3_DOMAIN_ROUND_CHARGE = 5;
 const PLAYER3_DOMAIN_INTRO_MS = 3000;
 const PLAYER3_DOMAIN_FREEZE_MS = 10000;
@@ -588,11 +588,41 @@ function getCharacterStatBullets(character, statBonus = Math.round(((character.s
     return bullets;
 }
 
+function getCharacterAbility(characterId) {
+    const abilities = {
+        player1: "Heals up to base HP",
+        player2: "Fires piercing projectiles + Self Heal",
+        player3: "RCT + Domain Expansion"
+    };
+    return abilities[characterId] || "Unknown";
+}
+
+function getCharacterBaseStats(character) {
+    const hp = BASE_PLAYER_HEALTH + (character.baseHpBonus || 0);
+    const statBonus = Math.round(((character.statMultiplier || 1) - 1) * 100);
+    return {
+        hp,
+        statBonus
+    };
+}
+
 function getCharacterStatBulletMarkup(character, className = "character-bullets") {
+    const stats = getCharacterBaseStats(character);
+    const ability = getCharacterAbility(character.id);
+    
     return `
-        <ul class="${className}">
-            ${getCharacterStatBullets(character).map((bullet) => `<li>+ ${bullet}</li>`).join("")}
-        </ul>
+        <div class="character-card-details">
+            <div class="character-stats-section">
+                <span class="character-stats-label">Base Stats:</span>
+                <ul class="${className}">
+                    <li>${stats.hp} HP</li>
+                </ul>
+            </div>
+            <div class="character-ability-section">
+                <span class="character-ability-label">Ability (Q):</span>
+                <p class="character-ability-text character-ability-highlight">${ability}</p>
+            </div>
+        </div>
     `;
 }
 
@@ -1632,17 +1662,18 @@ function renderModeMenu() {
             
             <div class="mt-6">
                 <p class="text-xs font-black uppercase tracking-[0.18em] text-slate-400 mb-2">Character</p>
-                <div class="grid gap-2 sm:grid-cols-3 mb-6">
+                <div class="grid gap-3 sm:grid-cols-3 mb-6">
                     ${["player1", "player2", "player3"].map((characterId) => {
                         const config = getCharacterConfig(characterId);
                         const selected = state.selectedCharacter === characterId;
                         const source = spriteSources[config.base] || spriteSources.player1;
                         return `
-                            <button class="character-choice ${selected ? "selected" : ""}" data-character="${characterId}" type="button" ${config.unlocked ? "" : "disabled"} style="padding: 0.75rem; font-size: 0.875rem;">
-                                <span class="character-choice-portrait sprite-icon" style="width: 32px; height: 32px; margin: 0 auto;">
-                                    <img src="${source}" alt="${config.name}" onerror="this.style.display='none'" style="width: 100%; height: 100%;">
+                            <button class="character-choice ${selected ? "selected" : ""}" data-character="${characterId}" type="button" ${config.unlocked ? "" : "disabled"}>
+                                <span class="character-choice-portrait sprite-icon">
+                                    <img src="${source}" alt="${config.name}" onerror="this.style.display='none'">
                                 </span>
                                 <span>${config.name}</span>
+                                ${config.unlocked ? getCharacterStatBulletMarkup(config, "character-choice-stats") : "<small>Unlock in Adventure</small>"}
                             </button>
                         `;
                     }).join("")}
@@ -1674,10 +1705,15 @@ function renderModeMenu() {
 
     if (state.menuPhase === "tutorial") {
         menuView.innerHTML = `
-            <div class="text-center">
-                <p class="text-sm font-black uppercase tracking-[0.28em] text-blue-300">How To Play</p>
-                <h2 class="mt-2 text-4xl font-black uppercase text-white sm:text-5xl">Game Tutorial</h2>
-                <div class="tutorial-grid mt-6 mx-auto max-w-4xl">
+            <div class="w-full max-w-4xl">
+                <div class="flex items-center justify-between mb-4 pb-3 border-b-2 border-slate-700">
+                    <div class="flex-1 text-center">
+                        <p class="text-sm font-black uppercase tracking-[0.28em] text-blue-300">How To Play</p>
+                        <h2 class="mt-1 text-3xl font-black uppercase text-white sm:text-4xl">Game Tutorial</h2>
+                    </div>
+                    <button class="arcade-btn bg-slate-700 text-white hover:bg-slate-600 ml-4 whitespace-nowrap" data-menu-action="home" type="button">← Back</button>
+                </div>
+                <div class="tutorial-grid mx-auto max-w-4xl" style="max-height: 55vh; overflow-y: auto;">
                     <div class="tutorial-card">
                         ${getTutorialIconMarkup("player1", "WASD")}
                         <div><h3>Movement</h3><p><strong>WASD</strong> or <strong>Arrow Keys</strong>. Stay moving, dodge throws, and keep space from swarming students.</p></div>
@@ -1688,11 +1724,11 @@ function renderModeMenu() {
                     </div>
                     <div class="tutorial-card">
                         ${getTutorialIconMarkup("player3Domain", "Q")}
-                        <div><h3>Ability</h3><p><strong>Q</strong> spends charge. Player 1 heals, Player 2 heals and fires piercing waves, Player 3 heals and freezes the court.</p></div>
+                        <div><h3>Ability</h3><p><strong>Q</strong> spends charge. Player 1 heals, Player 2 heals and burst fires, Player 3 RCT and Domain Expansion.</p></div>
                     </div>
                     <div class="tutorial-card">
                         ${getTutorialIconMarkup("coinIcon", "SHOP")}
-                        <div><h3>Locker Shop</h3><p>Shops appear after every 2 cleared levels. First shop gives up to ${FIRST_SHOP_FREE_CARD_LIMIT} free cards. Later shops spend coins; skip is button-only.</p></div>
+                        <div><h3>Locker Shop</h3><p>Shops appear after every 2 cleared levels. First shop gives up to ${FIRST_SHOP_FREE_CARD_LIMIT} free cards. Later shops spend coins; Can also skip.</p></div>
                     </div>
                     <div class="tutorial-card">
                         ${getTutorialIconMarkup("dodgeballBuffIcon", "BUFF")}
@@ -1704,10 +1740,9 @@ function renderModeMenu() {
                     </div>
                     <div class="tutorial-card">
                         ${getTutorialIconMarkup("teacher", "BOSS")}
-                        <div><h3>Boss Levels</h3><p>Bosses appear every 5 levels. Easy projectiles are slower. Endless bosses ramp HP, speed, and dodge chance.</p></div>
+                        <div><h3>Boss Levels</h3><p>Bosses appear every 5 levels. Easy Mode projectiles are slower. Endless bosses have ramping stats</p></div>
                     </div>
-                </div>
-                <button class="arcade-btn mt-8 bg-slate-100 text-slate-950 hover:bg-white" data-menu-action="home" type="button">Back to Menu</button>
+                    </div>
             </div>
         `;
         return;
@@ -1717,9 +1752,9 @@ function renderModeMenu() {
         menuView.innerHTML = `
             <div class="text-center">
                 <p class="text-sm font-black uppercase tracking-[0.28em] text-emerald-300">Credits</p>
-                <h2 class="mt-2 text-4xl font-black uppercase text-white sm:text-6xl">Coming Soon</h2>
+                <h2 class="mt-2 text-4xl font-black uppercase text-white sm:text-6xl">THANK YOU!</h2>
                 <div class="story-scene mt-6">
-                    <p>Credits placeholder. Add names, art notes, music, and special thanks here.</p>
+                    <p>Special Thanks to:<br> ReLogic-Terraria // MUSIC <br>ARCADEMIA Team // OVERALL GAME DEVELOPMENT</p>
                 </div>
                 <button class="arcade-btn mt-6 bg-slate-100 text-slate-950 hover:bg-white" data-menu-action="home" type="button">Back</button>
             </div>
@@ -1973,7 +2008,7 @@ function togglePause() {
 
 function fireAbilityDodgeballWave(waveIndex, options = {}) {
     const { piercing = false, character = null } = options;
-    const speed = getPlayerProjectileSpeed() * 1.08;
+    const speed = (character === "player2" ? getPlayerProjectileSpeed() * 2 : getPlayerProjectileSpeed() * 1.08);
     const spreadAngles = [-0.18, 0, 0.18];
     const originX = player.x + player.width / 2;
     const originY = player.y + 10;
@@ -2088,7 +2123,7 @@ function throwPlayerBall() {
                 owner: "player",
                 powerUpType,
                 character: state.selectedCharacter,
-                piercing: state.selectedCharacter === "player2",
+                piercing: false,
                 bouncesLeft: Math.random() < bounceChance ? 1 : 0,
                 color: state.playerUpgrades.latestBallColor,
                 spawnDelay: trail * 200,

@@ -99,50 +99,94 @@ body::before {
 .milestone-bar {
     display: grid;
     grid-template-columns: repeat(10, minmax(0, 1fr));
-    gap: 0.35rem;
+    gap: 0.4rem;
     border: 2px solid rgba(15, 23, 42, 0.82);
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.82);
-    padding: 0.45rem;
-    box-shadow: 4px 4px 0 rgba(15, 23, 42, 0.16);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(248, 250, 252, 0.9) 100%);
+    padding: 0.55rem;
+    box-shadow: inset 0 0 10px rgba(15, 23, 42, 0.08), 4px 4px 0 rgba(15, 23, 42, 0.16);
 }
 
 .milestone-step {
     display: grid;
-    min-height: 2.6rem;
+    grid-template-rows: auto auto auto;
+    min-height: 3.2rem;
     place-items: center;
-    border: 2px solid rgba(15, 23, 42, 0.22);
+    border: 2px solid rgba(15, 23, 42, 0.3);
     border-radius: 8px;
-    background: rgba(248, 250, 252, 0.9);
+    background: linear-gradient(135deg, rgba(248, 250, 252, 0.95) 0%, rgba(243, 244, 246, 0.9) 100%);
     color: rgb(15, 23, 42);
     line-height: 1.05;
     text-align: center;
+    transition: all 250ms ease;
+    gap: 0.2rem;
+}
+
+.milestone-icon {
+    font-size: 1.2rem;
+    line-height: 1;
 }
 
 .milestone-step strong {
-    font-size: 0.8rem;
+    font-size: 0.9rem;
     font-weight: 900;
 }
 
-.milestone-step span {
-    font-size: 0.55rem;
+.milestone-label {
+    font-size: 0.5rem;
     font-weight: 900;
     letter-spacing: 0.08em;
     text-transform: uppercase;
+    color: rgb(71, 85, 105);
 }
 
 .milestone-step.current {
-    border-color: rgb(22, 163, 74);
-    background: rgb(220, 252, 231);
+    border: 3px solid rgb(22, 163, 74);
+    background: linear-gradient(135deg, rgb(220, 252, 231) 0%, rgb(187, 247, 208) 100%);
+    box-shadow: 
+        0 0 15px rgba(22, 163, 74, 0.4),
+        inset 0 0 8px rgba(22, 163, 74, 0.1),
+        4px 4px 0 rgba(15, 23, 42, 0.2);
+    transform: scale(1.08);
+    color: rgb(5, 100, 46);
+}
+
+.milestone-step.current strong {
+    color: rgb(5, 100, 46);
+}
+
+.milestone-step.completed {
+    border-color: rgb(124, 179, 66);
+    background: linear-gradient(135deg, rgba(200, 230, 160, 0.8), rgba(180, 220, 140, 0.8));
+    opacity: 0.85;
+}
+
+.milestone-step.completed .milestone-label {
+    color: rgb(5, 100, 46);
 }
 
 .milestone-step.shop {
     border-color: rgb(217, 119, 6);
+    background: linear-gradient(135deg, rgba(254, 243, 199, 0.9), rgba(253, 224, 71, 0.85));
+}
+
+.milestone-step.shop .milestone-icon {
+    color: rgb(180, 83, 9);
 }
 
 .milestone-step.boss {
     border-color: rgb(220, 38, 38);
-    background: rgb(254, 226, 226);
+    background: linear-gradient(135deg, rgb(254, 226, 226) 0%, rgb(253, 200, 200) 100%);
+}
+
+.milestone-step.boss .milestone-icon {
+    color: rgb(153, 27, 27);
+    font-size: 1.4rem;
+}
+
+.milestone-step:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 12px rgba(15, 23, 42, 0.2);
 }
 
 .control-legend {
@@ -305,12 +349,18 @@ body::before {
 
 #powerList {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.55rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.6rem;
 }
 
 #powerList > * {
     margin-top: 0 !important;
+}
+
+@media (max-width: 640px) {
+    #powerList {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
 
 .power-row {
@@ -376,55 +426,102 @@ body::before {
 
 .upgrade-slot {
     display: grid;
-    gap: 0.65rem;
+    gap: 0.5rem;
 }
 
 .upgrade-card {
     display: grid;
     grid-template-rows: auto auto 1fr auto;
     justify-items: center;
-    min-height: 13.5rem;
+    min-height: 14.5rem;
     width: 100%;
-    border: 3px solid rgb(15, 23, 42);
-    border-radius: 8px;
-    background: rgb(248, 250, 252);
-    padding: 1.05rem 0.9rem;
+    border: 4px solid;
+    border-image: linear-gradient(135deg, #fbbf24 0%, #3b82f6 100%) 1;
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(30, 41, 59, 0.9) 100%);
+    padding: 1.2rem 1rem;
     text-align: center;
-    box-shadow: 6px 6px 0 rgba(15, 23, 42, 0.28);
-    transition: transform 140ms ease, filter 140ms ease;
+    box-shadow: 
+        inset 0 0 0 1px rgba(251, 191, 36, 0.3),
+        0 0 20px rgba(59, 130, 246, 0.3),
+        0 0 40px rgba(251, 191, 36, 0.15),
+        8px 8px 0 rgba(15, 23, 42, 0.3);
+    transition: transform 140ms ease, filter 140ms ease, box-shadow 140ms ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.upgrade-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, transparent 50%, rgba(59, 130, 246, 0.05) 100%);
+    pointer-events: none;
+}
+
+.upgrade-card:hover {
+    transform: translateY(-4px) scale(1.02);
+    filter: brightness(1.15);
+    box-shadow: 
+        inset 0 0 0 1px rgba(251, 191, 36, 0.5),
+        0 0 30px rgba(59, 130, 246, 0.6),
+        0 0 50px rgba(251, 191, 36, 0.3),
+        10px 10px 0 rgba(15, 23, 42, 0.4);
 }
 
 .upgrade-card.yellow-slip-card {
-    border-color: rgb(202, 138, 4);
-    background:
-        radial-gradient(circle at 50% 24%, rgba(250, 204, 21, 0.34), transparent 42%),
-        rgb(255, 251, 235);
-    box-shadow:
-        0 0 0 3px rgba(250, 204, 21, 0.32),
-        0 0 24px rgba(250, 204, 21, 0.52),
-        6px 6px 0 rgba(15, 23, 42, 0.24);
+    border-image: linear-gradient(135deg, #fbbf24 0%, #fbbf24 100%) 1;
+    background: linear-gradient(135deg, rgba(217, 119, 6, 0.2) 0%, rgba(251, 191, 36, 0.15) 100%);
+    box-shadow: 
+        inset 0 0 0 1px rgba(251, 191, 36, 0.5),
+        0 0 30px rgba(251, 191, 36, 0.6),
+        8px 8px 0 rgba(15, 23, 42, 0.3);
 }
 
 .reroll-btn {
-    border: 2px solid rgb(15, 23, 42);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    border: 2px solid rgba(59, 130, 246, 0.8);
     border-radius: 8px;
-    background: rgb(241, 245, 249);
-    padding: 0.45rem 0.55rem;
-    color: rgb(15, 23, 42);
-    font-size: 0.72rem;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(251, 191, 36, 0.1) 100%);
+    padding: 0.5rem 0.65rem;
+    color: rgb(147, 197, 253);
+    font-size: 0.68rem;
     font-weight: 900;
     text-transform: uppercase;
     cursor: pointer;
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
+    transition: all 140ms ease;
+    min-width: 56px;
+}
+
+.reroll-btn::before {
+    content: "↻";
+    font-size: 0.95rem;
+    color: rgb(251, 191, 36);
+}
+
+.reroll-count {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 900;
+    min-width: 18px;
+    text-align: center;
+}
+
+.reroll-btn:hover:not(:disabled) {
+    transform: scale(1.08);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(251, 191, 36, 0.2) 100%);
+    border-color: rgba(251, 191, 36, 0.9);
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.6), 0 0 10px rgba(251, 191, 36, 0.4);
 }
 
 .reroll-btn:disabled {
     cursor: not-allowed;
-    filter: grayscale(0.5) brightness(0.78);
-}
-
-.upgrade-card:hover {
-    transform: translateY(-3px);
-    filter: brightness(1.03);
+    filter: grayscale(0.8) brightness(0.7);
+    box-shadow: 0 0 0 rgba(59, 130, 246, 0);
 }
 
 .upgrade-card:disabled {
@@ -435,44 +532,50 @@ body::before {
 
 .upgrade-card-icon {
     display: grid;
-    width: 80px;
-    height: 80px;
+    width: 90px;
+    height: 90px;
     place-items: center;
-    border: 2px solid rgb(15, 23, 42);
-    border-radius: 8px;
-    background: rgb(2, 6, 23);
+    border: 3px solid;
+    border-image: linear-gradient(135deg, #fbbf24 0%, #3b82f6 100%) 1;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgb(15, 23, 42) 0%, rgb(30, 41, 59) 100%);
     color: white;
     font-weight: 900;
     overflow: hidden;
+    box-shadow: inset 0 0 10px rgba(59, 130, 246, 0.2);
 }
 
 .upgrade-card-title {
-    margin-top: 0.9rem;
-    color: rgb(15, 23, 42);
-    font-size: 1.02rem;
+    margin-top: 1rem;
+    color: rgb(255, 255, 255);
+    font-size: 1.05rem;
     font-weight: 900;
     text-transform: uppercase;
     line-height: 1.05;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 .upgrade-card-text {
-    margin-top: 0.45rem;
-    color: rgb(51, 65, 85);
-    font-size: 0.86rem;
-    font-weight: 800;
-    line-height: 1.42;
+    margin-top: 0.5rem;
+    color: rgb(226, 232, 240);
+    font-size: 0.82rem;
+    font-weight: 600;
+    line-height: 1.4;
 }
 
 .upgrade-card-cost {
     display: inline-block;
     align-self: end;
-    margin-top: 0.9rem;
-    border-radius: 999px;
-    background: rgb(254, 243, 199);
-    padding: 0.3rem 0.55rem;
-    color: rgb(120, 53, 15);
-    font-size: 0.75rem;
+    margin-top: 1rem;
+    border: 2px solid rgb(251, 191, 36);
+    border-radius: 8px;
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(59, 130, 246, 0.1));
+    padding: 0.4rem 0.7rem;
+    color: rgb(255, 255, 255);
+    font-size: 0.8rem;
     font-weight: 900;
+    text-transform: uppercase;
+    box-shadow: 0 0 10px rgba(251, 191, 36, 0.3);
 }
 
 .power-name {
@@ -529,6 +632,9 @@ body::before {
         repeating-linear-gradient(0deg, rgba(248, 250, 252, 0.05), rgba(248, 250, 252, 0.05) 2px, transparent 2px, transparent 6px);
 }
 
+
+
+
 .loading-art {
     width: min(72vw, 360px);
     aspect-ratio: 16 / 9;
@@ -546,21 +652,24 @@ body::before {
 .character-choice {
     display: grid;
     gap: 0.35rem;
-    min-height: 6.8rem;
-    border: 3px solid rgb(248, 250, 252);
-    border-radius: 8px;
-    background: rgba(248, 250, 252, 0.12);
-    padding: 0.9rem;
+    min-height: 7.5rem;
+    border: 3px solid;
+    border-image: linear-gradient(135deg, #fbbf24 0%, #3b82f6 100%) 1;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.7) 0%, rgba(30, 41, 59, 0.8) 100%);
+    padding: 1rem;
     color: white;
     text-align: left;
     cursor: pointer;
-    box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.28);
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.3), 0 0 8px rgba(251, 191, 36, 0.15), 5px 5px 0 rgba(0, 0, 0, 0.28);
+    transition: all 140ms ease;
 }
 
 .character-choice {
     justify-items: center;
-    min-height: 14rem;
+    min-height: 18rem;
     text-align: center;
+    grid-template-columns: 1fr;
 }
 
 .character-loading-view {
@@ -599,14 +708,22 @@ body::before {
 
 .menu-card.selected,
 .character-choice.selected {
-    border-color: rgb(251, 191, 36);
-    background: rgba(251, 191, 36, 0.18);
+    border-image: linear-gradient(135deg, #fbbf24 0%, #fbbf24 100%) 1;
+    background: linear-gradient(135deg, rgba(217, 119, 6, 0.4) 0%, rgba(251, 191, 36, 0.2) 100%);
+    box-shadow: 0 0 30px rgba(251, 191, 36, 0.6), inset 0 0 15px rgba(251, 191, 36, 0.1), 7px 7px 0 rgba(0, 0, 0, 0.35);
+}
+
+.menu-card:hover,
+.character-choice:hover {
+    transform: translateY(-3px);
+    filter: brightness(1.1);
+    box-shadow: 0 0 25px rgba(59, 130, 246, 0.5), 0 0 15px rgba(251, 191, 36, 0.3), 6px 6px 0 rgba(0, 0, 0, 0.3);
 }
 
 .menu-card:disabled,
 .character-choice:disabled {
     cursor: not-allowed;
-    filter: grayscale(0.8) brightness(0.68);
+    filter: grayscale(0.8) brightness(0.6);
 }
 
 .menu-card span,
@@ -626,7 +743,8 @@ body::before {
 
 .character-choice-portrait {
     display: grid;
-    width: min(100%, 7.2rem);
+    width: min(100%, 8.5rem);
+    height: auto;
     aspect-ratio: 1 / 1;
     place-items: center;
     border: 2px solid rgb(248, 250, 252);
@@ -634,10 +752,62 @@ body::before {
     overflow: hidden;
 }
 
+.character-card-details {
+    width: 100%;
+    text-align: left;
+    font-size: 0.7rem;
+    line-height: 1.3;
+}
+
+.character-stats-section,
+.character-ability-section {
+    margin-top: 0.3rem;
+}
+
+.character-stats-label,
+.character-ability-label {
+    display: block;
+    font-weight: 900;
+    color: rgb(101, 139, 194);
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.character-ability-label {
+    color: rgb(234, 179, 8);
+}
+
+.character-ability-text {
+    margin: 0.2rem 0 0;
+    color: rgb(226, 232, 240);
+    font-weight: 600;
+    font-size: 0.7rem;
+}
+
+.character-ability-highlight {
+    color: rgb(253, 230, 138);
+    font-weight: 700;
+}
+
+#characterPanel .character-stats-label,
+#characterPanel .character-ability-label {
+    color: rgb(51, 65, 85);
+}
+
+#characterPanel .character-ability-label {
+    color: rgb(51, 65, 85);
+}
+
+#characterPanel .character-ability-text {
+    color: rgb(51, 65, 85);
+}
+
 .character-choice-portrait img {
-    width: 94%;
-    height: 94%;
+    width: 100%;
+    height: 100%;
     object-fit: contain;
+    object-position: center;
     image-rendering: pixelated;
 }
 
@@ -677,36 +847,115 @@ body::before {
 
 .tutorial-grid {
     display: grid;
-    gap: 0.75rem;
-    max-height: min(68vh, 34rem);
-    overflow-y: auto;
-    padding-right: 0.25rem;
+    gap: 1.2rem;
+    grid-template-columns: repeat(3, 1fr);
+    max-height: calc(100% - 2rem);
+    padding-right: 1rem;
+    padding-bottom: 1rem;
 }
 
 .tutorial-card {
     display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 0.75rem;
+    grid-template-rows: auto auto;
+    gap: 0.8rem;
     align-items: center;
-    border: 2px solid rgba(248, 250, 252, 0.78);
-    border-radius: 8px;
-    background: rgba(15, 23, 42, 0.58);
-    padding: 0.75rem;
+    justify-items: center;
+    border: 3px solid;
+    border-image: linear-gradient(135deg, #fbbf24 0%, #3b82f6 100%) 1;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
+    padding: 1.3rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 200ms ease;
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.25), 0 0 10px rgba(251, 191, 36, 0.1), 6px 6px 0 rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+.tutorial-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, transparent 50%, rgba(59, 130, 246, 0.05) 100%);
+    pointer-events: none;
+}
+
+.tutorial-card:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 0 30px rgba(59, 130, 246, 0.5), 0 0 15px rgba(251, 191, 36, 0.3), 8px 8px 0 rgba(0, 0, 0, 0.25);
+    border-image: linear-gradient(135deg, #fbbf24 0%, #fbbf24 50%, #3b82f6 100%) 1;
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%);
+}
+
+.tutorial-card-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.8rem;
+    width: 100%;
+}
+
+.tutorial-card.expanded .tutorial-card-header {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 1rem;
+    width: 100%;
+}
+
+.tutorial-card-header h3 {
+    margin: 0;
+    color: rgb(255, 215, 0);
+    font-size: 0.95rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.tutorial-card-header > div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    text-align: center;
+}
+
+.tutorial-card.expanded .tutorial-card-header > div {
     text-align: left;
+}
+
+.tutorial-card-header p {
+    margin: 0;
+    color: rgb(226, 232, 240);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.tutorial-card.expanded .tutorial-card-header p {
+    display: none;
+}
+
+.tutorial-card-content p {
+    margin: 0;
+    color: rgb(226, 232, 240);
+    font-size: 0.9rem;
+    font-weight: 600;
+    line-height: 1.5;
 }
 
 .tutorial-icon {
     display: grid;
-    width: 3.4rem;
-    height: 3.4rem;
+    width: 4.8rem;
+    height: 4.8rem;
     place-items: center;
-    border: 2px solid rgb(248, 250, 252);
+    border: 3px solid;
+    border-image: linear-gradient(135deg, #fbbf24 0%, #3b82f6 100%) 1;
     border-radius: 8px;
-    background: rgb(2, 6, 23);
+    background: linear-gradient(135deg, rgb(15, 23, 42) 0%, rgb(30, 41, 59) 100%);
     color: white;
     font-size: 0.7rem;
     font-weight: 900;
     overflow: hidden;
+    box-shadow: inset 0 0 8px rgba(59, 130, 246, 0.2);
 }
 
 .tutorial-icon img {
@@ -718,18 +967,19 @@ body::before {
 
 .tutorial-card h3 {
     margin: 0 0 0.16rem;
-    color: rgb(253, 230, 138);
+    color: rgb(255, 215, 0);
     font-size: 0.95rem;
     font-weight: 900;
     text-transform: uppercase;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .tutorial-card p {
     margin: 0;
     color: rgb(226, 232, 240);
-    font-size: 0.82rem;
+    font-size: 0.7rem;
     font-weight: 600;
-    line-height: 1.38;
+    line-height: 1.4;
 }
 
 .tutorial-card strong {
@@ -866,4 +1116,174 @@ body::before {
 canvas {
     image-rendering: pixelated;
     touch-action: none;
+}
+
+/* Virtual Controls (On-screen UI) */
+.virtual-controls {
+    position: fixed;
+    bottom: 1rem;
+    left: 0;
+    right: 0;
+    display: none;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 1rem;
+    pointer-events: none;
+    z-index: 25;
+}
+
+.virtual-controls.visible {
+    display: flex;
+}
+
+.control-group {
+    display: flex;
+    gap: 0.5rem;
+    pointer-events: auto;
+}
+
+.control-group.left {
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.control-group.right {
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.dpad-container {
+    display: grid;
+    grid-template-columns: repeat(3, 44px);
+    gap: 2px;
+}
+
+.dpad-btn {
+    width: 44px;
+    height: 44px;
+    border: 2px solid rgba(251, 191, 36, 0.6);
+    border-radius: 6px;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(251, 191, 36, 0.2));
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 20px;
+    font-weight: 900;
+    cursor: pointer;
+    transition: all 100ms ease;
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.2);
+}
+
+.dpad-btn:active {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.6), rgba(251, 191, 36, 0.4));
+    transform: scale(0.95);
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+}
+
+.dpad-spacer {
+    visibility: hidden;
+}
+
+.action-btn {
+    width: 50px;
+    height: 50px;
+    border: 2px solid rgba(251, 191, 36, 0.7);
+    border-radius: 8px;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.4), rgba(251, 191, 36, 0.3));
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 18px;
+    font-weight: 900;
+    cursor: pointer;
+    transition: all 100ms ease;
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.action-btn:active {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.7), rgba(251, 191, 36, 0.5));
+    transform: scale(0.92);
+    box-shadow: 0 0 18px rgba(59, 130, 246, 0.6);
+}
+
+.action-btn.space-btn {
+    width: 60px;
+    height: 50px;
+    font-size: 12px;
+}
+
+.action-btn.q-btn {
+    width: 50px;
+    height: 50px;
+}
+
+/* Responsive Mobile Adjustments */
+@media (max-width: 768px) {
+    main {
+        max-width: 100%;
+    }
+
+    .left-widgets {
+
+        width: 100%;
+        margin-bottom: 1rem;
+    }
+
+    .tutorial-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .control-legend {
+        flex-direction: column;
+        gap: 0.3rem;
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        font-size: 14px;
+    }
+
+
+
+    .tutorial-grid {
+        grid-template-columns: 1fr;
+        gap: 0.8rem;
+    }
+
+    .menu-card,
+    .character-choice {
+        min-height: 6.5rem;
+        padding: 0.8rem;
+    }
+
+    .upgrade-card {
+        min-height: 13rem;
+        padding: 0.9rem;
+    }
+
+    .virtual-controls {
+        bottom: 0.5rem;
+        padding: 0.8rem;
+    }
+
+    .dpad-container {
+        grid-template-columns: repeat(3, 40px);
+    }
+
+    .dpad-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 18px;
+    }
+
+    .action-btn {
+        width: 45px;
+        height: 45px;
+        font-size: 16px;
+    }
+
+    .action-btn.space-btn {
+        width: 55px;
+    }
 }
