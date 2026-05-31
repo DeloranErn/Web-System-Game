@@ -22,6 +22,11 @@ const gameShell = document.getElementById("gameShell");
 const loadingView = document.getElementById("loadingView");
 const menuView = document.getElementById("menuView");
 const storyView = document.getElementById("storyView");
+const storyKicker = document.getElementById("storyKicker");
+const storyTitle = document.getElementById("storyTitle");
+const storyImage = document.getElementById("storyImage");
+const storyText = document.getElementById("storyText");
+const storyProgress = document.getElementById("storyProgress");
 const yellowSlipView = document.getElementById("yellowSlipView");
 const yellowSlipTitle = document.getElementById("yellowSlipTitle");
 const yellowSlipText = document.getElementById("yellowSlipText");
@@ -72,6 +77,7 @@ const spriteSources = {
     dodgeball: "assets/player-dodgeball.png",
     dodgeballBuffIcon: "assets/dodgeball-buff-icon.png",
     volleyballBuffIcon: "assets/volleyball-buff-icon.png",
+    basketballBuffIcon: "assets/basketball-buff-icon.png",
     soccerballBuffIcon: "assets/soccerball-buff-icon.png",
     siomaiRiceBuffIcon: "assets/siomairice-buff-icon.png",
     icedCoffeeBuffIcon: "assets/icedcoffee-buff-icon.png",
@@ -94,6 +100,7 @@ const spriteSources = {
     icedCoffee: "assets/iced-coffee.png",
     icedCoffeeIndicator: "assets/iced-coffee-indicator.png",
     volleyball: "assets/player-volleyball.png",
+    basketball: "assets/player2-projectile.png",
     soccerball: "assets/player-soccerball.png",
     peUniform: "assets/pe-uniform.png",
     player2Projectile: "assets/player2-projectile.png",
@@ -108,6 +115,8 @@ const ROUND_TRANSITION_MS = 1800;
 const BOSS_NAME = "Tung Tung Tung Sahur";
 const BOSS_IFRAME_MS = 400;
 const BOSS_CHALK_ATTACK_MS = 3000;
+const BOSS_BALL_CRIT_CHANCE = 0.35;
+const BOSS_CHALK_CRIT_CHANCE = 0.20;
 const BASE_PLAYER_HEALTH = 3;
 const BOSS_REWARD_HEALTH = 2;
 const BOSS_REWARD_COINS = 5;
@@ -141,8 +150,12 @@ const SHOP_REROLL_COST = 2;
 const SHOP_NEW_BUFF_LIMIT = 3;
 const FIRST_SHOP_FREE_CARD_LIMIT = 2;
 const MAX_NEW_BUFF_STACKS = 4;
-const MAX_BALL_BUFF_STACKS = 4;
+const MAX_DODGEBALL_BUFF_STACKS = 3;
+const MAX_VOLLEYBALL_BUFF_STACKS = 4;
+const MAX_BASKETBALL_BUFF_STACKS = 3;
 const MAX_SOCCERBALL_BUFF_STACKS = 2;
+const BASKETBALL_CRIT_CHANCE_PER_STACK = 0.12;
+const ADVANCED_CHARACTER_THROW_COOLDOWN_MS = 1000;
 const CHARACTER_SELECT_DELAY_MS = 4000;
 const PLAYER_ABILITY_KILL_CHARGE = 20;
 const PLAYER3_DOMAIN_ROUND_CHARGE = 5;
@@ -160,6 +173,7 @@ const POWER_UP_TYPES = {
     COFFEE: "icedCoffee",
     DODGEBALL: "dodgeball",
     VOLLEYBALL: "volleyball",
+    BASKETBALL: "basketball",
     SOCCERBALL: "soccerball",
     PE_UNIFORM: "peUniform",
     YELLOW_SLIP: "yellowSlip",
@@ -172,12 +186,14 @@ const POWER_UP_TYPES = {
 const BALL_POWER_TYPES = [
     POWER_UP_TYPES.DODGEBALL,
     POWER_UP_TYPES.VOLLEYBALL,
+    POWER_UP_TYPES.BASKETBALL,
     POWER_UP_TYPES.SOCCERBALL
 ];
 
 const SHOP_POWER_WEIGHTS = {
     [POWER_UP_TYPES.DODGEBALL]: 1.05,
     [POWER_UP_TYPES.VOLLEYBALL]: 1.05,
+    [POWER_UP_TYPES.BASKETBALL]: 1.00,
     [POWER_UP_TYPES.SOCCERBALL]: 0.90
 };
 
@@ -222,7 +238,9 @@ const audioSources = {
     player2Ability: "assets/audio/player2Ability.mp3",
     player3Domain: "assets/audio/player3Domain.mp3",
     abilityNotReady: "assets/audio/abilityNotReady.mp3",
+    criticalHit: "assets/audio/criticalHit.mp3",
     playerHit: "assets/audio/playerHit1.mp3",
+    weave: "assets/audio/weave.mp3",
     playerDefeated: "assets/audio/playerDefeated1.mp3",
 
     // SFX - Shop
@@ -507,6 +525,8 @@ function getCharacterConfig(characterId) {
             peThrow: "player1PeThrow",
             shirt: "#2563eb",
             statMultiplier: 1,
+            baseCritChance: 0.05,
+            baseDodgeChance: 0.05,
             baseHpBonus: 0
         },
         player2: {
@@ -519,8 +539,10 @@ function getCharacterConfig(characterId) {
             peThrow: "player2PeThrow",
             shirt: "#0f766e",
             statMultiplier: 1.03,
+            baseCritChance: 0.10,
+            baseDodgeChance: 0.05,
             baseHpBonus: 1,
-            starterPowerUps: [POWER_UP_TYPES.VOLLEYBALL, POWER_UP_TYPES.COFFEE]
+            starterPowerUps: [POWER_UP_TYPES.BASKETBALL, POWER_UP_TYPES.COFFEE]
         },
         player3: {
             id: "player3",
@@ -532,6 +554,8 @@ function getCharacterConfig(characterId) {
             peThrow: "player3PeThrow",
             shirt: "#7c3aed",
             statMultiplier: 1.05,
+            baseCritChance: 0.05,
+            baseDodgeChance: 0.10,
             baseHpBonus: 2,
             starterPowerUps: [POWER_UP_TYPES.DODGEBALL, POWER_UP_TYPES.COFFEE]
         }
@@ -564,6 +588,14 @@ function getCharacterStatMultiplier() {
     return getCharacterConfig(state.selectedCharacter).statMultiplier || 1;
 }
 
+function getCharacterBaseCritChance(characterId = state.selectedCharacter) {
+    return getCharacterConfig(characterId).baseCritChance || 0;
+}
+
+function getCharacterBaseDodgeChance(characterId = state.selectedCharacter) {
+    return getCharacterConfig(characterId).baseDodgeChance || 0;
+}
+
 function getCharacterStatText(character, statBonus = Math.round(((character.statMultiplier || 1) - 1) * 100)) {
     if (character.id === "player1") return `Base: ${BASE_PLAYER_HEALTH}HP`;
     return `${BASE_PLAYER_HEALTH + (character.baseHpBonus || 0)} HP${statBonus > 0 ? ` / +${statBonus}% stats` : ""}`;
@@ -591,7 +623,7 @@ function getCharacterStatBullets(character, statBonus = Math.round(((character.s
 function getCharacterAbility(characterId) {
     const abilities = {
         player1: "Heals up to base HP",
-        player2: "Fires piercing projectiles + Self Heal",
+        player2: "Piercing 2x shots + Self Heal",
         player3: "RCT + Domain Expansion"
     };
     return abilities[characterId] || "Unknown";
@@ -600,22 +632,67 @@ function getCharacterAbility(characterId) {
 function getCharacterBaseStats(character) {
     const hp = BASE_PLAYER_HEALTH + (character.baseHpBonus || 0);
     const statBonus = Math.round(((character.statMultiplier || 1) - 1) * 100);
+    const critChance = Math.round((character.baseCritChance || 0) * 100);
+    const dodgeChance = Math.round((character.baseDodgeChance || 0) * 100);
     return {
         hp,
-        statBonus
+        statBonus,
+        critChance,
+        dodgeChance
     };
+}
+
+function formatChancePercent(chance) {
+    return `${Math.round(chance * 100)}%`;
+}
+
+function getCurrentShieldCount() {
+    return state.playerUpgrades.peUniformStacks +
+        (state.playerUpgrades.siomaiShieldRounds > 0 ? 1 : 0);
+}
+
+function getCharacterLiveStatMarkup() {
+    const character = getCharacterConfig(state.selectedCharacter);
+    const baseHp = BASE_PLAYER_HEALTH + (character.baseHpBonus || 0);
+    const currentHp = ["loading", "menu", "story"].includes(state.status) ? baseHp : state.health;
+    const shieldCount = getCurrentShieldCount();
+    const shieldText = shieldCount > 0 ? ` (+${shieldCount} Shield${shieldCount === 1 ? "" : "s"})` : "";
+    return `
+        <div class="character-card-details">
+            <div class="character-stats-section">
+                <span class="character-stats-label">Base Stats:</span>
+                <ul class="character-bullets live-character-stats">
+                    <li>Base HP: ${baseHp} | Current: ${currentHp}${shieldText}</li>
+                    <li>Crit: ${formatChancePercent(getPlayerCritChance())}</li>
+                    <li>Dodge: ${formatChancePercent(getPlayerProjectileDodgeChance())}</li>
+                </ul>
+            </div>
+            <div class="character-ability-section">
+                <span class="character-ability-label">Ability (Q):</span>
+                <p class="character-ability-text character-ability-highlight">${getCharacterAbility(state.selectedCharacter)}</p>
+            </div>
+        </div>
+    `;
 }
 
 function getCharacterStatBulletMarkup(character, className = "character-bullets") {
     const stats = getCharacterBaseStats(character);
     const ability = getCharacterAbility(character.id);
+    const isCharacterChoiceStats = className === "character-choice-stats";
+    const statRows = isCharacterChoiceStats
+        ? [`${stats.critChance}% Crit | ${stats.dodgeChance}% Dodge`]
+        : [
+            `${stats.hp} HP`,
+            `${stats.critChance}% Crit`,
+            stats.dodgeChance > 0 ? `${stats.dodgeChance}% Dodge` : ""
+        ].filter(Boolean);
     
     return `
         <div class="character-card-details">
             <div class="character-stats-section">
                 <span class="character-stats-label">Base Stats:</span>
                 <ul class="${className}">
-                    <li>${stats.hp} HP</li>
+                    ${statRows.map((row) => `<li>${row}</li>`).join("")}
                 </ul>
             </div>
             <div class="character-ability-section">
@@ -636,6 +713,10 @@ function applyCharacterStarterUpgrades() {
             state.playerUpgrades.volleyballBounce = true;
             state.playerUpgrades.volleyballStacks = Math.max(1, state.playerUpgrades.volleyballStacks);
             state.playerUpgrades.latestBallColor = "#facc15";
+        }
+        if (type === POWER_UP_TYPES.BASKETBALL) {
+            state.playerUpgrades.basketballStacks = Math.max(1, state.playerUpgrades.basketballStacks);
+            state.playerUpgrades.latestBallColor = "#ea580c";
         }
         if (type === POWER_UP_TYPES.DODGEBALL) {
             state.playerUpgrades.dodgeballStacks = Math.max(1, state.playerUpgrades.dodgeballStacks);
@@ -676,6 +757,7 @@ const state = {
     abilityCharge: 0,
     domainIntroTimer: 0,
     domainFreezeTimer: 0,
+    adventureStorySlide: 0,
     courtMarks: [],
     playerBalls: [],
     enemyBalls: [],
@@ -696,6 +778,7 @@ const state = {
         dodgeballStacks: 0,
         volleyballBounce: false,
         volleyballStacks: 0,
+        basketballStacks: 0,
         soccerStacks: 0,
         coffeeRounds: 0,
         peUniformStacks: 0,
@@ -958,6 +1041,19 @@ function getBossDodgeChance() {
     return Math.min(0.40, (getBossAppearance() - 1) * 0.10);
 }
 
+function getBossCritChance(type = "ball") {
+    const baseChance = type === "chalk" ? BOSS_CHALK_CRIT_CHANCE : BOSS_BALL_CRIT_CHANCE;
+    const difficultyMultiplier = getEffectiveDifficulty() === "hard" ? 1.15 : 1;
+    const endlessMultiplier = state.gameMode === "endless" ? getEndlessBossMovementMultiplier() : 1;
+    const levelMultiplier = getLevelScale();
+    const cap = type === "chalk" ? 0.60 : 0.75;
+    return Math.min(cap, baseChance * difficultyMultiplier * endlessMultiplier * levelMultiplier);
+}
+
+function rollBossCrit(type = "ball") {
+    return Math.random() < getBossCritChance(type);
+}
+
 function getModeLabel() {
     if (state.gameMode !== "adventure") {
         const difficulty = getEffectiveDifficulty();
@@ -1020,12 +1116,16 @@ function getPlayerSpeed() {
 
 function getThrowCooldown() {
     const characterMultiplier = getCharacterStatMultiplier();
-    const baseCooldown = Math.max(900, 1600 - state.round * 90);
+    const characterCooldownBonus = state.selectedCharacter === "player2" || state.selectedCharacter === "player3"
+        ? ADVANCED_CHARACTER_THROW_COOLDOWN_MS
+        : 0;
+    const baseCooldown = Math.max(900, 1600 - state.round * 90) + characterCooldownBonus;
     const coffeeMultiplier = state.playerUpgrades.coffeeRounds > 0 ? 0.70 : 1;
     const uniformMultiplier = 1 / (1 + state.playerUpgrades.peUniformStacks * 0.15);
     const agilityMultiplier = Math.max(0.55, 1 - state.playerUpgrades.throwSpeedStacks * 0.07);
     const ballStacks = state.playerUpgrades.dodgeballStacks +
         state.playerUpgrades.volleyballStacks +
+        state.playerUpgrades.basketballStacks +
         state.playerUpgrades.soccerStacks;
     const lateBallBurden = state.round >= 25 ? ballStacks * 0.03 : 0;
     const ballBurdenMultiplier = 1 +
@@ -1042,8 +1142,11 @@ function getPlayerProjectileSpeed() {
 }
 
 function getPlayerProjectileDodgeChance() {
-    const characterDodgeBonus = getCharacterStatMultiplier() - 1;
-    return Math.min(0.65, characterDodgeBonus + state.playerUpgrades.dodgeChanceStacks * 0.07);
+    return Math.min(0.65, getCharacterBaseDodgeChance() + state.playerUpgrades.dodgeChanceStacks * 0.07);
+}
+
+function getPlayerCritChance() {
+    return Math.min(0.85, getCharacterBaseCritChance() + state.playerUpgrades.basketballStacks * BASKETBALL_CRIT_CHANCE_PER_STACK);
 }
 
 function getTeacherHp() {
@@ -1100,8 +1203,9 @@ function canApplyPowerUp(type) {
     if (type === POWER_UP_TYPES.PROJECTILE_SPEED) return state.playerUpgrades.projectileSpeedStacks < MAX_NEW_BUFF_STACKS;
     if (type === POWER_UP_TYPES.MOVEMENT_SPEED) return state.playerUpgrades.movementSpeedStacks < MAX_NEW_BUFF_STACKS;
     if (type === POWER_UP_TYPES.DODGE_CHANCE) return state.playerUpgrades.dodgeChanceStacks < MAX_NEW_BUFF_STACKS;
-    if (type === POWER_UP_TYPES.DODGEBALL) return state.playerUpgrades.dodgeballStacks < MAX_BALL_BUFF_STACKS;
-    if (type === POWER_UP_TYPES.VOLLEYBALL) return state.playerUpgrades.volleyballStacks < MAX_BALL_BUFF_STACKS;
+    if (type === POWER_UP_TYPES.DODGEBALL) return state.playerUpgrades.dodgeballStacks < MAX_DODGEBALL_BUFF_STACKS;
+    if (type === POWER_UP_TYPES.VOLLEYBALL) return state.playerUpgrades.volleyballStacks < MAX_VOLLEYBALL_BUFF_STACKS;
+    if (type === POWER_UP_TYPES.BASKETBALL) return state.playerUpgrades.basketballStacks < MAX_BASKETBALL_BUFF_STACKS;
     if (type === POWER_UP_TYPES.SOCCERBALL) return state.playerUpgrades.soccerStacks < MAX_SOCCERBALL_BUFF_STACKS;
     if (type === POWER_UP_TYPES.PE_UNIFORM) return state.playerUpgrades.peUniformStacks < getMaxPeUniformStacks();
     if (type === POWER_UP_TYPES.SIOMAI) return state.playerUpgrades.siomaiShieldRounds < getMaxSiomaiStacks();
@@ -1183,6 +1287,11 @@ function applyPowerUp(type) {
         state.playerUpgrades.latestBallColor = "#facc15";
     }
 
+    if (type === POWER_UP_TYPES.BASKETBALL) {
+        state.playerUpgrades.basketballStacks++;
+        state.playerUpgrades.latestBallColor = "#ea580c";
+    }
+
     if (type === POWER_UP_TYPES.SOCCERBALL) {
         state.playerUpgrades.soccerStacks++;
         state.playerUpgrades.latestBallColor = "#f8fafc";
@@ -1222,6 +1331,7 @@ function applyPowerUp(type) {
 
     syncHud();
     updatePowerPanel();
+    updateCharacterPanel();
     return true;
 }
 
@@ -1229,13 +1339,19 @@ function getPowerUpDetails(type) {
     if (type === POWER_UP_TYPES.DODGEBALL) {
         return {
             title: "Dodgeball",
-            description: "Adds one more angled spread shot."
+            description: "Adds one more angled spread shot. Max 3."
         };
     }
     if (type === POWER_UP_TYPES.VOLLEYBALL) {
         return {
             title: "Volleyball",
-            description: "20% bounce chance. +8% ball size."
+            description: "20% piercing chance. +13% ball size."
+        };
+    }
+    if (type === POWER_UP_TYPES.BASKETBALL) {
+        return {
+            title: "Basketball",
+            description: "25% bounce chance. 12% crit per stack. Max 3."
         };
     }
     if (type === POWER_UP_TYPES.SOCCERBALL) {
@@ -1274,10 +1390,16 @@ function getPowerUpDetails(type) {
             description: `Blocks one hit. Speed and throw rate up. Max ${getMaxPeUniformStacks()}.`
         };
     }
+    if (type === POWER_UP_TYPES.COFFEE) {
+        return {
+            title: "Iced Coffee",
+            description: "Coffee Bean buff: +15% speed and -30% throw cooldown for 2 rounds."
+        };
+    }
     if (type === POWER_UP_TYPES.YELLOW_SLIP) {
         return {
             title: "Yellow Slip",
-            description: "50% revive on knockout."
+            description: "70% revive on knockout."
         };
     }
     return {
@@ -1522,20 +1644,89 @@ function syncHud() {
 function updateMilestoneBar() {
     if (!milestoneBar) return;
 
-    const start = Math.max(1, state.round - 2);
-    const levels = Array.from({ length: 10 }, (_, index) => start + index);
-    milestoneBar.innerHTML = levels.map((level) => {
-        const isCurrent = level === state.round;
+    const isPlanning = ["menu", "loading", "ready", "story"].includes(state.status);
+    const mode = isPlanning ? state.selectedMode : state.gameMode;
+    const difficulty = state.adventureDifficulty;
+    const currentLevel = isPlanning ? 1 : state.round;
+    const adventureLimit = difficulty === "hard" ? 30 : 20;
+    const isAdventurePlan = mode === "adventure";
+    const start = isAdventurePlan ? 1 : Math.max(1, currentLevel - 2);
+    const total = isAdventurePlan ? adventureLimit : 12;
+    const levels = Array.from({ length: total }, (_, index) => start + index);
+
+    milestoneBar.innerHTML = `
+        <div class="milestone-track ${isAdventurePlan ? "adventure" : "endless"}" style="--milestone-count:${levels.length}">
+            ${levels.map((level) => makeMilestoneStep(level, currentLevel)).join("")}
+        </div>
+    `;
+    centerCurrentMilestone();
+}
+
+function makeMilestoneStep(level, currentLevel) {
+        const isCurrent = level === currentLevel;
+        const isCompleted = level < currentLevel;
         const isBoss = level % 5 === 0;
         const isShop = level > 1 && (level - 1) % 2 === 0;
-        const label = isBoss ? "Boss" : isShop ? "Shop" : "Level";
+        const type = getMilestoneType(isShop, isBoss);
+        const classes = [
+            "milestone-step",
+            type.className,
+            isCurrent ? "current" : "",
+            isCompleted ? "completed" : ""
+        ].filter(Boolean).join(" ");
+
         return `
-            <div class="milestone-step ${isCurrent ? "current" : ""} ${isShop ? "shop" : ""} ${isBoss ? "boss" : ""}">
-                <strong>${level}</strong>
-                <span>${isCurrent ? "Now" : label}</span>
+            <div class="${classes}" title="Level ${level}: ${type.description}">
+                <span class="milestone-icon" aria-hidden="true">${type.icon}</span>
+                <span class="milestone-node" aria-hidden="true"></span>
+                <span class="milestone-card">
+                    <strong>Lv ${level}</strong>
+                    <small>${type.label}</small>
+                </span>
             </div>
         `;
-    }).join("");
+}
+
+function getMilestoneType(isShop, isBoss) {
+    if (isShop && isBoss) {
+        return {
+            className: "shop boss combo",
+            icon: "B+",
+            label: "Shop + Boss",
+            description: "Locker shop before a boss fight"
+        };
+    }
+    if (isBoss) {
+        return {
+            className: "boss",
+            icon: "B",
+            label: "Boss Fight",
+            description: "Boss level"
+        };
+    }
+    if (isShop) {
+        return {
+            className: "shop",
+            icon: "$",
+            label: "Locker Shop",
+            description: "Shop appears before this fight"
+        };
+    }
+    return {
+        className: "fight",
+        icon: "VS",
+        label: "Enemy Fight",
+        description: "Regular enemy level"
+    };
+}
+
+function centerCurrentMilestone() {
+    window.requestAnimationFrame(() => {
+        const current = milestoneBar?.querySelector(".milestone-step.current");
+        if (!current || !milestoneBar) return;
+        const target = current.offsetLeft + current.offsetWidth / 2 - milestoneBar.clientWidth / 2;
+        milestoneBar.scrollLeft = Math.max(0, target);
+    });
 }
 
 function showOverlay(title, text, actions = []) {
@@ -1583,6 +1774,7 @@ function showMenuScreen() {
     if (yellowSlipView) yellowSlipView.classList.add("hidden");
     if (menuView) menuView.classList.remove("hidden");
     renderModeMenu();
+    updateMilestoneBar();
 }
 
 function hideMenuOverlay() {
@@ -1596,6 +1788,45 @@ function getTutorialIconMarkup(spriteName, fallbackText) {
     const source = spriteSources[spriteName];
     if (!source) return `<span class="tutorial-icon">${fallbackText}</span>`;
     return `<span class="tutorial-icon"><img src="${source}" alt="" onerror="this.style.display='none'; this.parentElement.textContent='${fallbackText}'"></span>`;
+}
+
+function getTutorialBuffMarkup() {
+    const buffs = [
+        POWER_UP_TYPES.DODGEBALL,
+        POWER_UP_TYPES.VOLLEYBALL,
+        POWER_UP_TYPES.BASKETBALL,
+        POWER_UP_TYPES.SOCCERBALL,
+        POWER_UP_TYPES.THROW_SPEED,
+        POWER_UP_TYPES.PROJECTILE_SPEED,
+        POWER_UP_TYPES.MOVEMENT_SPEED,
+        POWER_UP_TYPES.DODGE_CHANCE,
+        POWER_UP_TYPES.PE_UNIFORM,
+        POWER_UP_TYPES.SIOMAI,
+        POWER_UP_TYPES.COFFEE,
+        POWER_UP_TYPES.YELLOW_SLIP
+    ];
+
+    return buffs.map((type) => `
+        <div class="tutorial-buff-item">
+            ${getTutorialBuffIconMarkup(type)}
+            <div>
+                <h4>${getTutorialBuffName(type)}</h4>
+                <p>${getTutorialBuffDescription(type)}</p>
+            </div>
+        </div>
+    `).join("");
+}
+
+function getTutorialBuffIconMarkup(type) {
+    return getPowerUpIconMarkup(type, "tutorial-buff-icon");
+}
+
+function getTutorialBuffName(type) {
+    return getPowerUpName(type);
+}
+
+function getTutorialBuffDescription(type) {
+    return getPowerUpDescription(type);
 }
 
 function showLoadingScreen() {
@@ -1657,47 +1888,54 @@ function renderModeMenu() {
 
     if (state.menuPhase === "mode") {
         menuView.innerHTML = `
-            <p class="text-sm font-black uppercase tracking-[0.28em] text-emerald-300">Level Selection</p>
-            <h2 class="mt-2 text-4xl font-black uppercase text-white sm:text-6xl">Choose Run</h2>
-            
-            <div class="mt-6">
-                <p class="text-xs font-black uppercase tracking-[0.18em] text-slate-400 mb-2">Character</p>
-                <div class="grid gap-3 sm:grid-cols-3 mb-6">
-                    ${["player1", "player2", "player3"].map((characterId) => {
-                        const config = getCharacterConfig(characterId);
-                        const selected = state.selectedCharacter === characterId;
-                        const source = spriteSources[config.base] || spriteSources.player1;
-                        return `
-                            <button class="character-choice ${selected ? "selected" : ""}" data-character="${characterId}" type="button" ${config.unlocked ? "" : "disabled"}>
-                                <span class="character-choice-portrait sprite-icon">
-                                    <img src="${source}" alt="${config.name}" onerror="this.style.display='none'">
-                                </span>
-                                <span>${config.name}</span>
-                                ${config.unlocked ? getCharacterStatBulletMarkup(config, "character-choice-stats") : "<small>Unlock in Adventure</small>"}
-                            </button>
-                        `;
-                    }).join("")}
+            <div class="level-select-panel">
+                <div class="level-select-header">
+                    <p>Level Selection</p>
+                    <h2>Choose Run</h2>
                 </div>
-            </div>
-            
-            <p class="text-xs font-black uppercase tracking-[0.18em] text-slate-400 mb-3">Game Mode</p>
-            <div class="grid gap-3 sm:grid-cols-3">
-                <button class="menu-card ${state.selectedMode === "endless" ? "selected" : ""}" data-mode="endless" type="button">
-                    <span>Endless Mode</span>
-                    <small>No level cap. Current full game loop.</small>
-                </button>
-                <button class="menu-card ${state.selectedMode === "adventure" && state.adventureDifficulty === "easy" ? "selected" : ""}" data-mode="adventure" data-difficulty="easy" type="button">
-                    <span>Adventure Easy</span>
-                    <small>Story run to level 20.</small>
-                </button>
-                <button class="menu-card ${state.selectedMode === "adventure" && state.adventureDifficulty === "hard" ? "selected" : ""}" data-mode="adventure" data-difficulty="hard" type="button">
-                    <span>Adventure Hard</span>
-                    <small>Story run to level 30.</small>
-                </button>
-            </div>
-            <div class="mt-6 flex flex-wrap gap-3">
-                <button class="arcade-btn bg-emerald-500 text-slate-950 hover:bg-emerald-300" data-menu-action="start-run" type="button">Start Run</button>
-                <button class="arcade-btn bg-slate-100 text-slate-950 hover:bg-white" data-menu-action="home" type="button">Back</button>
+
+                <section class="level-select-section">
+                    <p class="level-select-label">Character</p>
+                    <div class="level-character-grid">
+                        ${["player1", "player2", "player3"].map((characterId) => {
+                            const config = getCharacterConfig(characterId);
+                            const selected = state.selectedCharacter === characterId;
+                            const source = spriteSources[config.base] || spriteSources.player1;
+                            return `
+                                <button class="character-choice level-character ${selected ? "selected" : ""}" data-character="${characterId}" type="button" ${config.unlocked ? "" : "disabled"}>
+                                    <span class="character-choice-portrait level-character-portrait sprite-icon">
+                                        <img src="${source}" alt="${config.name}" onerror="this.style.display='none'">
+                                    </span>
+                                    <span class="level-character-name">${config.name}</span>
+                                    ${config.unlocked ? getCharacterStatBulletMarkup(config, "character-choice-stats") : "<small>Unlock in Adventure</small>"}
+                                </button>
+                            `;
+                        }).join("")}
+                    </div>
+                </section>
+
+                <section class="level-select-section">
+                    <p class="level-select-label">Game Mode</p>
+                    <div class="level-mode-grid">
+                        <button class="menu-card level-mode-card ${state.selectedMode === "endless" ? "selected" : ""}" data-mode="endless" type="button">
+                            <span>Endless Mode</span>
+                            <small>No level cap. Current full game loop.</small>
+                        </button>
+                        <button class="menu-card level-mode-card ${state.selectedMode === "adventure" && state.adventureDifficulty === "easy" ? "selected" : ""}" data-mode="adventure" data-difficulty="easy" type="button">
+                            <span>Adventure Easy</span>
+                            <small>Story run to level 20.</small>
+                        </button>
+                        <button class="menu-card level-mode-card ${state.selectedMode === "adventure" && state.adventureDifficulty === "hard" ? "selected" : ""}" data-mode="adventure" data-difficulty="hard" type="button">
+                            <span>Adventure Hard</span>
+                            <small>Story run to level 30.</small>
+                        </button>
+                    </div>
+                </section>
+
+                <div class="level-actions">
+                    <button class="arcade-btn bg-emerald-500 text-slate-950 hover:bg-emerald-300" data-menu-action="start-run" type="button">Start Run</button>
+                    <button class="arcade-btn bg-slate-100 text-slate-950 hover:bg-white" data-menu-action="home" type="button">Back</button>
+                </div>
             </div>
         `;
         return;
@@ -1713,35 +1951,45 @@ function renderModeMenu() {
                     </div>
                     <button class="arcade-btn bg-slate-700 text-white hover:bg-slate-600 ml-4 whitespace-nowrap" data-menu-action="home" type="button">← Back</button>
                 </div>
-                <div class="tutorial-grid mx-auto max-w-4xl" style="max-height: 55vh; overflow-y: auto;">
-                    <div class="tutorial-card">
-                        ${getTutorialIconMarkup("player1", "WASD")}
-                        <div><h3>Movement</h3><p><strong>WASD</strong> or <strong>Arrow Keys</strong>. Stay moving, dodge throws, and keep space from swarming students.</p></div>
+                <div class="tutorial-scroll">
+                    <div class="tutorial-grid mx-auto max-w-4xl">
+                        <div class="tutorial-card">
+                            ${getTutorialIconMarkup("player1", "WASD")}
+                            <div><h3>Movement</h3><p><strong>WASD</strong> or <strong>Arrow Keys</strong>. Keep moving and avoid swarms.</p></div>
+                        </div>
+                        <div class="tutorial-card">
+                            ${getTutorialIconMarkup("ball", "SPC")}
+                            <div><h3>Throw</h3><p><strong>Space</strong> fires when ready. Player 2 throws piercing basketballs. Player 3 throws energy balls.</p></div>
+                        </div>
+                        <div class="tutorial-card">
+                            ${getTutorialIconMarkup("player3Domain", "Q")}
+                            <div><h3>Ability</h3><p><strong>Q</strong> spends charge. Heal, fire 2x shots, or open Domain.</p></div>
+                        </div>
+                        <div class="tutorial-card">
+                            ${getTutorialIconMarkup("coinIcon", "SHOP")}
+                            <div><h3>Locker Shop</h3><p>Shops appear after every 2 cleared levels. First shop gives up to ${FIRST_SHOP_FREE_CARD_LIMIT} free cards.</p></div>
+                        </div>
+                        <div class="tutorial-card">
+                            ${getTutorialIconMarkup("enemyRed", "ENEMY")}
+                            <div><h3>Students</h3><p>Students throw, dodge, and count laps. Easy swarms stun; Hard swarms are lethal.</p></div>
+                        </div>
+                        <div class="tutorial-card">
+                            ${getTutorialIconMarkup("teacher", "BOSS")}
+                            <div><h3>Boss Levels</h3><p>Bosses appear every 5 levels. Endless bosses keep ramping.</p></div>
+                        </div>
                     </div>
-                    <div class="tutorial-card">
-                        ${getTutorialIconMarkup("ball", "SPC")}
-                        <div><h3>Throw</h3><p><strong>Space</strong> fires when the cooldown bar is ready. Player 2 throws piercing basketballs. Player 3 throws energy balls.</p></div>
-                    </div>
-                    <div class="tutorial-card">
-                        ${getTutorialIconMarkup("player3Domain", "Q")}
-                        <div><h3>Ability</h3><p><strong>Q</strong> spends charge. Player 1 heals, Player 2 heals and burst fires, Player 3 RCT and Domain Expansion.</p></div>
-                    </div>
-                    <div class="tutorial-card">
-                        ${getTutorialIconMarkup("coinIcon", "SHOP")}
-                        <div><h3>Locker Shop</h3><p>Shops appear after every 2 cleared levels. First shop gives up to ${FIRST_SHOP_FREE_CARD_LIMIT} free cards. Later shops spend coins; Can also skip.</p></div>
-                    </div>
-                    <div class="tutorial-card">
-                        ${getTutorialIconMarkup("dodgeballBuffIcon", "BUFF")}
-                        <div><h3>Power Ups</h3><p>Ball upgrades change throws. Training buffs improve speed, throw rate, projectile speed, or dodge chance. PE and Siomai block hits.</p></div>
-                    </div>
-                    <div class="tutorial-card">
-                        ${getTutorialIconMarkup("enemyRed", "ENEMY")}
-                        <div><h3>Students</h3><p>Students throw, dodge, and count laps. Easy swarms stun and deal 1 HP; Hard swarms are lethal.</p></div>
-                    </div>
-                    <div class="tutorial-card">
-                        ${getTutorialIconMarkup("teacher", "BOSS")}
-                        <div><h3>Boss Levels</h3><p>Bosses appear every 5 levels. Easy Mode projectiles are slower. Endless bosses have ramping stats</p></div>
-                    </div>
+                    <section class="tutorial-buffs-panel">
+                        <div class="tutorial-buffs-header">
+                            ${getTutorialIconMarkup("dodgeballBuffIcon", "BUFF")}
+                            <div>
+                                <h3>Buffs / Powerups</h3>
+                                <p>Ball buffs change throws. Other buffs provide stats and other benefits.</p>
+                            </div>
+                        </div>
+                        <div class="tutorial-buff-grid">
+                            ${getTutorialBuffMarkup()}
+                        </div>
+                    </section>
                     </div>
             </div>
         `;
@@ -1852,6 +2100,7 @@ function selectMode(mode, difficulty = "easy") {
     state.selectedMode = mode;
     state.adventureDifficulty = difficulty;
     renderModeMenu();
+    updateMilestoneBar();
 }
 
 function clearCharacterSelectDelay() {
@@ -1885,6 +2134,53 @@ function beginCharacterSelection(characterId) {
     }, CHARACTER_SELECT_DELAY_MS);
 }
 
+function getAdventureStorySlides() {
+    return [
+        {
+            kicker: "Adventure Mode",
+            title: "After Class",
+            image: spriteSources.player1,
+            alt: "Khal Bo",
+            text: "Khal Bo gets pushed around after class. Today, he walks back into the court and challenges the bullies one level at a time."
+        },
+        {
+            kicker: state.adventureDifficulty === "hard" ? "Adventure Hard" : "Adventure Easy",
+            title: "Bell Rings",
+            image: spriteSources.teacher,
+            alt: "Teacher",
+            text: state.adventureDifficulty === "hard"
+                ? "The halls are louder now. Bosses hit harder, swarms end runs, and every win has to be earned."
+                : "The first bell gives you breathing room. Boss throws are slower, swarms stun instead of ending the run, and shops mark your route."
+        }
+    ];
+}
+
+function renderAdventureStorySlide() {
+    const slides = getAdventureStorySlides();
+    const index = clamp(state.adventureStorySlide, 0, slides.length - 1);
+    const slide = slides[index];
+
+    if (storyKicker) storyKicker.textContent = slide.kicker;
+    if (storyTitle) storyTitle.textContent = slide.title;
+    if (storyImage) {
+        storyImage.src = slide.image;
+        storyImage.alt = slide.alt;
+    }
+    if (storyText) storyText.textContent = slide.text;
+    if (storyProgress) storyProgress.textContent = `${index + 1} / ${slides.length}`;
+    if (skipStoryBtn) skipStoryBtn.textContent = index >= slides.length - 1 ? "Start Run" : "Next";
+}
+
+function advanceAdventureStory() {
+    const slides = getAdventureStorySlides();
+    if (state.adventureStorySlide < slides.length - 1) {
+        state.adventureStorySlide++;
+        renderAdventureStorySlide();
+        return;
+    }
+    startSelectedRun();
+}
+
 function showStoryScreen() {
     hideOverlay();
     hideCardChoices();
@@ -1894,6 +2190,8 @@ function showStoryScreen() {
     if (yellowSlipView) yellowSlipView.classList.add("hidden");
     if (storyView) storyView.classList.remove("hidden");
     state.status = "story";
+    state.adventureStorySlide = 0;
+    renderAdventureStorySlide();
 }
 
 function startSelectedRun() {
@@ -1902,6 +2200,15 @@ function startSelectedRun() {
         showStoryScreen();
         return;
     }
+    resetGame();
+    startRoundTransition();
+    state.lastTime = performance.now();
+    hideOverlay();
+    hideMenuOverlay();
+}
+
+function restartCurrentRun() {
+    state.selectedMode = state.gameMode;
     resetGame();
     startRoundTransition();
     state.lastTime = performance.now();
@@ -1952,6 +2259,7 @@ function resetGame() {
         dodgeballStacks: 0,
         volleyballBounce: false,
         volleyballStacks: 0,
+        basketballStacks: 0,
         soccerStacks: 0,
         coffeeRounds: 0,
         peUniformStacks: 0,
@@ -1997,17 +2305,26 @@ function togglePause() {
     if (state.status === "playing") {
         state.status = "paused";
         pauseBgMusic();
-        showOverlay("Paused", "Press P or Pause to continue the match.");
+        showOverlay("Menu", "Run paused.", [
+            { action: "continue", label: "Continue", className: "bg-emerald-500 text-slate-950 hover:bg-emerald-300" },
+            { action: "restart", label: "Restart", className: "bg-amber-300 text-slate-950 hover:bg-amber-200" },
+            { action: "main-menu", label: "Exit to Main Menu", className: "bg-slate-100 text-slate-950 hover:bg-white" }
+        ]);
     } else if (state.status === "paused") {
-        state.status = "playing";
-        state.lastTime = performance.now();
-        resumeBgMusic();
-        hideOverlay();
+        resumePausedRun();
     }
 }
 
+function resumePausedRun() {
+    if (state.status !== "paused") return;
+    state.status = "playing";
+    state.lastTime = performance.now();
+    resumeBgMusic();
+    hideOverlay();
+}
+
 function fireAbilityDodgeballWave(waveIndex, options = {}) {
-    const { piercing = false, character = null } = options;
+    const { piercing = false, character = null, doubleDamage = false } = options;
     const speed = (character === "player2" ? getPlayerProjectileSpeed() * 2 : getPlayerProjectileSpeed() * 1.08);
     const spreadAngles = [-0.18, 0, 0.18];
     const originX = player.x + player.width / 2;
@@ -2026,6 +2343,7 @@ function fireAbilityDodgeballWave(waveIndex, options = {}) {
             powerUpType: POWER_UP_TYPES.DODGEBALL,
             character: character || state.selectedCharacter,
             bouncesLeft: 0,
+            doubleDamage,
             color: "#dc2626",
             spawnDelay: waveIndex * 220,
             followPlayerOrigin: waveIndex > 0,
@@ -2057,6 +2375,7 @@ function triggerPlayerAbility() {
         burst(player.x + player.width / 2, player.y + player.height / 2, "#22c55e");
         floatText(player.x + player.width / 2, player.y - 16, "+1 HP", "#22c55e");
         syncHud();
+        updateCharacterPanel();
         return;
     }
 
@@ -2068,11 +2387,12 @@ function triggerPlayerAbility() {
             burst(player.x + player.width / 2, player.y + player.height / 2, "#22c55e");
             floatText(player.x + player.width / 2, player.y - 16, "+1 HP", "#22c55e");
             syncHud();
+            updateCharacterPanel();
         }
         state.abilityCharge = 0;
         playSound('player2Ability', 0.78);
-        fireAbilityDodgeballWave(0, { piercing: true, character: "player2" });
-        fireAbilityDodgeballWave(1, { piercing: true, character: "player2" });
+        fireAbilityDodgeballWave(0, { piercing: true, character: "player2", doubleDamage: true });
+        fireAbilityDodgeballWave(1, { piercing: true, character: "player2", doubleDamage: true });
         player.throwPose = 260;
         return;
     }
@@ -2085,6 +2405,7 @@ function triggerPlayerAbility() {
             burst(player.x + player.width / 2, player.y + player.height / 2, "#22c55e");
             floatText(player.x + player.width / 2, player.y - 16, "+1 HP", "#22c55e");
             syncHud();
+            updateCharacterPanel();
         }
         state.abilityCharge = 0;
         state.domainIntroTimer = PLAYER3_DOMAIN_INTRO_MS;
@@ -2101,9 +2422,11 @@ function throwPlayerBall() {
     const middle = (spreadCount - 1) / 2;
     const spreadStep = 0.18;
     const trailCount = state.playerUpgrades.soccerStacks;
-    const ballRadius = 13 * (1 + state.playerUpgrades.volleyballStacks * 0.08);
+    const ballRadius = 13 * (1 + state.playerUpgrades.volleyballStacks * 0.13);
     const powerUpType = getActiveBallPowerUpType();
-    const bounceChance = state.playerUpgrades.volleyballStacks > 0 ? 0.20 : 0;
+    const piercingChance = state.playerUpgrades.volleyballStacks > 0 ? 0.20 : 0;
+    const basketballBounceChance = state.playerUpgrades.basketballStacks > 0 ? 0.25 : 0;
+    const critChance = getPlayerCritChance();
 
     for (let spreadIndex = 0; spreadIndex < spreadCount; spreadIndex++) {
         const angle = (spreadIndex - middle) * spreadStep;
@@ -2123,8 +2446,9 @@ function throwPlayerBall() {
                 owner: "player",
                 powerUpType,
                 character: state.selectedCharacter,
-                piercing: false,
-                bouncesLeft: Math.random() < bounceChance ? 1 : 0,
+                piercing: Math.random() < piercingChance,
+                bouncesLeft: Math.random() < basketballBounceChance ? 1 : 0,
+                doubleDamage: Math.random() < critChance,
                 color: state.playerUpgrades.latestBallColor,
                 spawnDelay: trail * 200,
                 followPlayerOrigin: trail > 0,
@@ -2253,7 +2577,9 @@ function fireEnemyProjectile(student, spawnDelay = 0) {
         owner: "enemy",
         color: "#f97316",
         bouncesLeft: 0,
-        spawnDelay
+        spawnDelay,
+        bossProjectile: student.type === "teacher",
+        critical: student.type === "teacher" && rollBossCrit("ball")
     });
 }
 
@@ -2308,7 +2634,9 @@ function fireBossChalk() {
         owner: "enemy",
         color: "#f8fafc",
         bouncesLeft: 0,
-        type: "chalk"
+        type: "chalk",
+        bossProjectile: true,
+        critical: rollBossCrit("chalk")
     });
 }
 
@@ -2327,12 +2655,15 @@ function burst(x, y, color) {
     }
 }
 
-function floatText(x, y, text, color) {
+function floatText(x, y, text, color, options = {}) {
     state.floatTexts.push({
         x,
         y,
         text,
         color,
+        size: options.size || 18,
+        strokeColor: options.strokeColor || "#ffffff",
+        strokeWidth: options.strokeWidth || 4,
         life: 720
     });
 }
@@ -2341,7 +2672,26 @@ function showTagged(entity) {
     floatText(entity.x + entity.width / 2, entity.y - 8, "TAGGED", "#ef4444");
 }
 
+function showBossCritical(entity) {
+    playSound('criticalHit', 0.82);
+    floatText(entity.x + entity.width / 2, entity.y - 14, "BOSS CRIT!!", "#b91c1c", {
+        size: 23,
+        strokeColor: "#fee2e2",
+        strokeWidth: 5
+    });
+}
+
+function showCritical(entity) {
+    playSound('criticalHit', 0.82);
+    floatText(entity.x + entity.width / 2, entity.y - 12, "CRITICAL!!", "#dc2626", {
+        size: 22,
+        strokeColor: "#fee2e2",
+        strokeWidth: 5
+    });
+}
+
 function showDodged(entity) {
+    playSound('weave', 0.4);
     floatText(entity.x + entity.width / 2, entity.y - 8, "DODGED", "#38bdf8");
 }
 
@@ -2349,7 +2699,6 @@ function spawnCoins(x, y, amount) {
     state.coins += amount;
     syncHud();
     updatePowerPanel();
-    playSound('coinPickup', 0.6);
 
     for (let i = 0; i < amount; i++) {
         state.coinsVisuals.push({
@@ -2357,6 +2706,7 @@ function spawnCoins(x, y, amount) {
             y: y + (Math.random() - 0.5) * 24,
             life: 3000,
             delay: i * 80,
+            soundPlayed: false,
             width: 18,
             height: 10
         });
@@ -2462,6 +2812,7 @@ function tryYellowSlip(reasonTitle) {
     showYellowSlipScreen("sign", reasonTitle);
     updatePowerPanel();
     syncHud();
+    updateCharacterPanel();
     return true;
 }
 
@@ -2474,28 +2825,38 @@ function finishKnockout(title, text) {
     ]);
 }
 
-function loseHealth() {
-    showTagged(player);
-    if (state.playerUpgrades.siomaiShieldRounds > 0) {
-        state.playerUpgrades.siomaiShieldRounds--;
-        burst(player.x + player.width / 2, player.y + player.height / 2, "#22c55e");
-        syncHud();
-        updatePowerPanel();
-        return;
+function loseHealth(amount = 1, options = {}) {
+    const hits = Math.max(1, amount);
+    if (options.critical) {
+        showBossCritical(player);
+    } else {
+        showTagged(player);
     }
 
-    if (state.playerUpgrades.peUniformStacks > 0) {
-        state.playerUpgrades.peUniformStacks--;
-        burst(player.x + player.width / 2, player.y + player.height / 2, "#0ea5e9");
-        syncHud();
-        updatePowerPanel();
-        return;
+    let tookHealthDamage = false;
+    for (let i = 0; i < hits; i++) {
+        if (state.playerUpgrades.siomaiShieldRounds > 0) {
+            state.playerUpgrades.siomaiShieldRounds--;
+            burst(player.x + player.width / 2, player.y + player.height / 2, "#22c55e");
+            continue;
+        }
+
+        if (state.playerUpgrades.peUniformStacks > 0) {
+            state.playerUpgrades.peUniformStacks--;
+            burst(player.x + player.width / 2, player.y + player.height / 2, "#0ea5e9");
+            continue;
+        }
+
+        state.health--;
+        tookHealthDamage = true;
+        burst(player.x + player.width / 2, player.y + player.height / 2, options.critical ? "#b91c1c" : "#ef4444");
+        if (state.health <= 0) break;
     }
 
-    state.health--;
-    playSound('playerHit', 0.7);
-    burst(player.x + player.width / 2, player.y + player.height / 2, "#ef4444");
+    if (tookHealthDamage) playSound('playerHit', options.critical ? 0.82 : 0.7);
     syncHud();
+    updatePowerPanel();
+    updateCharacterPanel();
 
     if (state.health <= 0) {
         if (!state.unlocks.yellowSlip || state.playerUpgrades.yellowSlipStacks <= 0) {
@@ -2571,6 +2932,7 @@ function nextRound() {
     if (!state.companion && state.unlocks.companion) createCompanion();
     syncHud();
     updatePowerPanel();
+    updateCharacterPanel();
 
     if (clearedBoss) {
         state.health += BOSS_REWARD_HEALTH;
@@ -2579,6 +2941,7 @@ function nextRound() {
         state.bossRewardTimer = BOSS_REWARD_OVERLAY_MS;
         syncHud();
         updatePowerPanel();
+        updateCharacterPanel();
         return;
     }
 
@@ -2606,6 +2969,10 @@ function updateGame(deltaMs) {
         if (coin.delay > 0) {
             coin.delay -= deltaMs;
             return;
+        }
+        if (!coin.soundPlayed) {
+            playSound('coinPickup', 0.6);
+            coin.soundPlayed = true;
         }
 
         const targetX = player.x + player.width / 2;
@@ -2896,9 +3263,14 @@ function updateGame(deltaMs) {
             continue;
         }
 
-        const damage = hit.type === "teacher" && state.round >= 25 && state.unlocks.bossDamagePlus2 ? 3 : 1;
+        const baseDamage = hit.type === "teacher" && state.round >= 25 && state.unlocks.bossDamagePlus2 ? 3 : 1;
+        const damage = ball.doubleDamage ? baseDamage * 2 : baseDamage;
         hit.hp -= damage;
-        showTagged(hit);
+        if (ball.doubleDamage) {
+            showCritical(hit);
+        } else {
+            showTagged(hit);
+        }
         if (hit.type === "teacher") {
             hit.invulnTimer = BOSS_IFRAME_MS;
         }
@@ -2938,9 +3310,13 @@ function updateGame(deltaMs) {
                     burst(state.companion.x + state.companion.width / 2, state.companion.y + state.companion.height / 2, "#38bdf8");
                     continue;
                 }
-                showTagged(state.companion);
-                state.companion.hp--;
-                burst(state.companion.x + state.companion.width / 2, state.companion.y + state.companion.height / 2, "#ef4444");
+                if (ball.critical) {
+                    showBossCritical(state.companion);
+                } else {
+                    showTagged(state.companion);
+                }
+                state.companion.hp -= ball.critical ? 2 : 1;
+                burst(state.companion.x + state.companion.width / 2, state.companion.y + state.companion.height / 2, ball.critical ? "#b91c1c" : "#ef4444");
                 if (state.companion.hp <= 0) state.companion.active = false;
                 continue;
             }
@@ -2955,7 +3331,7 @@ function updateGame(deltaMs) {
                 if (ball.type === "chalk") {
                     state.playerSlowTimer = PLAYER_SLOW_MS;
                 }
-                loseHealth();
+                loseHealth(ball.critical ? 2 : 1, { critical: ball.critical });
                 break;
             }
         }
@@ -2997,6 +3373,8 @@ function updateGame(deltaMs) {
             state.playerUpgrades.peUniformStacks = 0;
             state.playerUpgrades.siomaiShieldRounds = 0;
             syncHud();
+            updatePowerPanel();
+            updateCharacterPanel();
             finishKnockout("Swarmed", `The other team finished 3 laps and rushed you. Final score: ${state.score}.`);
         }
     }
@@ -3604,6 +3982,7 @@ function drawEnergyBallFallback(ball) {
 
 function getActiveBallPowerUpType() {
     if (state.playerUpgrades.soccerStacks > 0) return POWER_UP_TYPES.SOCCERBALL;
+    if (state.playerUpgrades.basketballStacks > 0) return POWER_UP_TYPES.BASKETBALL;
     if (state.playerUpgrades.volleyballStacks > 0) return POWER_UP_TYPES.VOLLEYBALL;
     if (state.playerUpgrades.dodgeballStacks > 0) return POWER_UP_TYPES.DODGEBALL;
     return POWER_UP_TYPES.DODGEBALL;
@@ -3612,6 +3991,7 @@ function getActiveBallPowerUpType() {
 function getPowerUpSpriteName(type) {
     if (type === POWER_UP_TYPES.DODGEBALL) return "dodgeball";
     if (type === POWER_UP_TYPES.VOLLEYBALL) return "volleyball";
+    if (type === POWER_UP_TYPES.BASKETBALL) return "basketball";
     if (type === POWER_UP_TYPES.SOCCERBALL) return "soccerball";
     if (type === POWER_UP_TYPES.SIOMAI) return "siomaiRice";
     if (type === POWER_UP_TYPES.PE_UNIFORM) return "player1Pe";
@@ -3621,6 +4001,7 @@ function getPowerUpSpriteName(type) {
 function getPowerUpIconSpriteName(type) {
     if (type === POWER_UP_TYPES.DODGEBALL) return "dodgeballBuffIcon";
     if (type === POWER_UP_TYPES.VOLLEYBALL) return "volleyballBuffIcon";
+    if (type === POWER_UP_TYPES.BASKETBALL) return "basketballBuffIcon";
     if (type === POWER_UP_TYPES.SOCCERBALL) return "soccerballBuffIcon";
     if (type === POWER_UP_TYPES.SIOMAI) return "siomaiRiceBuffIcon";
     if (type === POWER_UP_TYPES.COFFEE) return "icedCoffeeBuffIcon";
@@ -3635,6 +4016,21 @@ function getPowerUpIconSpriteName(type) {
 
 function getPowerUpDescription(type) {
     return getPowerUpDetails(type).description || getPowerUpName(type);
+}
+
+function getPowerUpStackLimit(type) {
+    if (type === POWER_UP_TYPES.DODGEBALL) return MAX_DODGEBALL_BUFF_STACKS;
+    if (type === POWER_UP_TYPES.VOLLEYBALL) return MAX_VOLLEYBALL_BUFF_STACKS;
+    if (type === POWER_UP_TYPES.BASKETBALL) return MAX_BASKETBALL_BUFF_STACKS;
+    if (type === POWER_UP_TYPES.SOCCERBALL) return MAX_SOCCERBALL_BUFF_STACKS;
+    if (type === POWER_UP_TYPES.THROW_SPEED) return MAX_NEW_BUFF_STACKS;
+    if (type === POWER_UP_TYPES.PROJECTILE_SPEED) return MAX_NEW_BUFF_STACKS;
+    if (type === POWER_UP_TYPES.MOVEMENT_SPEED) return MAX_NEW_BUFF_STACKS;
+    if (type === POWER_UP_TYPES.DODGE_CHANCE) return MAX_NEW_BUFF_STACKS;
+    if (type === POWER_UP_TYPES.PE_UNIFORM) return getMaxPeUniformStacks();
+    if (type === POWER_UP_TYPES.SIOMAI) return getMaxSiomaiStacks();
+    if (type === POWER_UP_TYPES.YELLOW_SLIP) return 1;
+    return 2;
 }
 
 function getPowerUpIconMarkup(type, className = "power-icon", amount = 0) {
@@ -3655,6 +4051,7 @@ function getPowerUpLabel(type) {
     if (type === POWER_UP_TYPES.COFFEE) return "IC";
     if (type === POWER_UP_TYPES.DODGEBALL) return "DB";
     if (type === POWER_UP_TYPES.VOLLEYBALL) return "VB";
+    if (type === POWER_UP_TYPES.BASKETBALL) return "BB";
     if (type === POWER_UP_TYPES.PE_UNIFORM) return "PE";
     if (type === POWER_UP_TYPES.YELLOW_SLIP) return "YS";
     if (type === POWER_UP_TYPES.THROW_SPEED) return "AG";
@@ -3669,6 +4066,7 @@ function getPowerUpColor(type) {
     if (type === POWER_UP_TYPES.COFFEE) return "#92400e";
     if (type === POWER_UP_TYPES.DODGEBALL) return "#dc2626";
     if (type === POWER_UP_TYPES.VOLLEYBALL) return "#facc15";
+    if (type === POWER_UP_TYPES.BASKETBALL) return "#ea580c";
     if (type === POWER_UP_TYPES.PE_UNIFORM) return "#0ea5e9";
     if (type === POWER_UP_TYPES.YELLOW_SLIP) return "#facc15";
     if (type === POWER_UP_TYPES.THROW_SPEED) return "#84cc16";
@@ -3683,6 +4081,7 @@ function getPowerUpName(type) {
     if (type === POWER_UP_TYPES.COFFEE) return "Iced Coffee";
     if (type === POWER_UP_TYPES.DODGEBALL) return "Dodgeball";
     if (type === POWER_UP_TYPES.VOLLEYBALL) return "Volleyball";
+    if (type === POWER_UP_TYPES.BASKETBALL) return "Basketball";
     if (type === POWER_UP_TYPES.SOCCERBALL) return "Soccerball";
     if (type === POWER_UP_TYPES.THROW_SPEED) return "Agility";
     if (type === POWER_UP_TYPES.PROJECTILE_SPEED) return "Arm Strength";
@@ -3694,11 +4093,20 @@ function getPowerUpName(type) {
 
 function makePowerPanelRow(type, amount = 0) {
     const title = `${getPowerUpName(type)}: ${getPowerUpDescription(type)}`;
+    const limit = getPowerUpStackLimit(type);
     return `
-        <div class="power-row" title="${title}" aria-label="${title}">
+        <div class="power-row" aria-label="${title}">
             ${getPowerUpIconMarkup(type, "power-icon", amount)}
             <span class="power-name" title="${getPowerUpName(type)}">${getPowerUpName(type)}</span>
             <span class="power-amount">x${amount}</span>
+            <span class="power-tooltip" role="tooltip">
+                ${getPowerUpIconMarkup(type, "power-tooltip-icon")}
+                <span class="power-tooltip-body">
+                    <strong>${getPowerUpName(type)}</strong>
+                    <span>Stacks: ${amount}/${limit}</span>
+                    <small>${getPowerUpDescription(type)}</small>
+                </span>
+            </span>
         </div>
     `;
 }
@@ -3711,6 +4119,7 @@ function updatePowerPanel() {
 
     if (upgrades.dodgeballStacks > 0) rows.push(makePowerPanelRow(POWER_UP_TYPES.DODGEBALL, upgrades.dodgeballStacks));
     if (upgrades.volleyballStacks > 0) rows.push(makePowerPanelRow(POWER_UP_TYPES.VOLLEYBALL, upgrades.volleyballStacks));
+    if (upgrades.basketballStacks > 0) rows.push(makePowerPanelRow(POWER_UP_TYPES.BASKETBALL, upgrades.basketballStacks));
     if (upgrades.soccerStacks > 0) rows.push(makePowerPanelRow(POWER_UP_TYPES.SOCCERBALL, upgrades.soccerStacks));
     if (upgrades.siomaiShieldRounds > 0) rows.push(makePowerPanelRow(POWER_UP_TYPES.SIOMAI, upgrades.siomaiShieldRounds));
     if (upgrades.peUniformStacks > 0) rows.push(makePowerPanelRow(POWER_UP_TYPES.PE_UNIFORM, upgrades.peUniformStacks));
@@ -3741,7 +4150,7 @@ function updateCharacterPanel() {
             <div class="character-details">
                 <span class="character-name">${character.name}</span>
                 <span class="character-status">${getModeLabel()}</span>
-                ${getCharacterStatBulletMarkup(character)}
+                ${getCharacterLiveStatMarkup()}
             </div>
         </div>
     `;
@@ -3774,7 +4183,9 @@ function drawPowerUp(powerUp) {
     } else {
         ctx.stroke();
     }
-    ctx.fillStyle = powerUp.type === POWER_UP_TYPES.VOLLEYBALL || powerUp.type === POWER_UP_TYPES.SOCCERBALL ? "#111827" : "#ffffff";
+    ctx.fillStyle = powerUp.type === POWER_UP_TYPES.VOLLEYBALL ||
+        powerUp.type === POWER_UP_TYPES.BASKETBALL ||
+        powerUp.type === POWER_UP_TYPES.SOCCERBALL ? "#111827" : "#ffffff";
     ctx.font = "bold 11px sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -3873,9 +4284,9 @@ function drawFloatTexts() {
     state.floatTexts.forEach((item) => {
         ctx.globalAlpha = clamp(item.life / 720, 0, 1);
         ctx.fillStyle = item.color;
-        ctx.strokeStyle = "#ffffff";
-        ctx.lineWidth = 4;
-        ctx.font = "900 18px Poppins, sans-serif";
+        ctx.strokeStyle = item.strokeColor || "#ffffff";
+        ctx.lineWidth = item.strokeWidth || 4;
+        ctx.font = `900 ${item.size || 18}px Poppins, sans-serif`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.strokeText(item.text, item.x, item.y);
@@ -4086,22 +4497,30 @@ function holdButton(button, keyName) {
     button.addEventListener("pointercancel", () => set(false));
 }
 
-startBtn.addEventListener("click", startGame);
-pauseBtn.addEventListener("click", togglePause);
-resetBtn.addEventListener("click", () => {
-    if (["loading", "menu", "story", "yellowSlip", "gameover", "ready"].includes(state.status)) {
-        showMenuScreen();
-        return;
-    }
+if (startBtn) {
+    startBtn.addEventListener("click", startGame);
+}
+if (pauseBtn) {
+    pauseBtn.addEventListener("click", togglePause);
+}
+if (resetBtn) {
+    resetBtn.addEventListener("click", () => {
+        if (["loading", "menu", "story", "yellowSlip", "gameover", "ready"].includes(state.status)) {
+            showMenuScreen();
+            return;
+        }
 
-    resetGame();
-});
+        resetGame();
+    });
+}
 if (mainMenuBtn) {
     mainMenuBtn.addEventListener("click", showMenuScreen);
 }
-holdButton(leftBtn, "left");
-holdButton(rightBtn, "right");
-fireBtn.addEventListener("pointerdown", throwPlayerBall);
+if (leftBtn) holdButton(leftBtn, "left");
+if (rightBtn) holdButton(rightBtn, "right");
+if (fireBtn) {
+    fireBtn.addEventListener("pointerdown", throwPlayerBall);
+}
 if (cardChoices) {
     cardChoices.addEventListener("click", (event) => {
         const reroll = event.target.closest("[data-reroll-slot]");
@@ -4122,7 +4541,7 @@ if (skipCardBtn) {
     });
 }
 if (skipStoryBtn) {
-    skipStoryBtn.addEventListener("click", startSelectedRun);
+    skipStoryBtn.addEventListener("click", advanceAdventureStory);
 }
 if (overlayActions) {
     overlayActions.addEventListener("click", (event) => {
@@ -4130,6 +4549,14 @@ if (overlayActions) {
         if (!button) return;
 
         const action = button.dataset.overlayAction;
+        if (action === "continue") {
+            resumePausedRun();
+            return;
+        }
+        if (action === "restart") {
+            restartCurrentRun();
+            return;
+        }
         if (action === "main-menu") {
             showMenuScreen();
             return;
@@ -4157,6 +4584,7 @@ if (menuView) {
                 return;
             }
             if (action === "start-run") {
+                playSound(getCharacterSelectSoundName(state.selectedCharacter), 0.8);
                 startSelectedRun();
                 return;
             }
@@ -4184,7 +4612,7 @@ if (yellowSlipBtn) {
     yellowSlipBtn.addEventListener("click", () => {
         if (state.yellowSlipPhase === "sign") {
             stopSound('yellowSlipBase');
-            const passed = Math.random() < 0.5;
+            const passed = Math.random() < 0.70;
             state.yellowSlipPhase = "signing";
             showYellowSlipScreen("signing", state.yellowSlipReason);
             window.setTimeout(() => showYellowSlipResult(passed), YELLOW_SLIP_SIGN_REVEAL_MS);
@@ -4201,6 +4629,7 @@ if (yellowSlipBtn) {
             state.status = "playing";
             state.lastTime = performance.now();
             syncHud();
+            updateCharacterPanel();
             return;
         }
 

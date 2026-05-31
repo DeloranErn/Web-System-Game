@@ -23,7 +23,7 @@
                 </section>
             </aside>
 
-        <section class="w-full max-w-[1100px]">
+        <section class="game-stage w-full max-w-[1100px]">
             <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <p class="text-xs font-black uppercase tracking-[0.28em] text-emerald-700">AIM HIGH? AIM BETTER.</p>
@@ -44,7 +44,7 @@
             <div id="milestoneBar" class="milestone-bar mb-3" aria-label="Level milestones"></div>
 
             <div id="gameShell" class="relative overflow-hidden rounded-lg border-4 border-slate-800 bg-[#ead7a6] shadow-[0_18px_45px_rgba(15,23,42,0.22)]">
-                <button id="pauseBtn" class="pause-button arcade-btn bg-sky-700 text-white hover:bg-sky-600" type="button">Pause</button>
+                <button id="pauseBtn" class="pause-button arcade-btn bg-sky-700 text-white hover:bg-sky-600" type="button">Menu</button>
                 <canvas id="gameCanvas" width="1080" height="768" class="block aspect-[45/32] w-full"></canvas>
                 <div id="overlay" class="absolute inset-0 hidden items-center justify-center bg-slate-950/60 px-6 text-center">
                     <div>
@@ -74,13 +74,14 @@
                     <div id="menuView" class="menu-view hidden w-full max-w-4xl"></div>
 
                     <div id="storyView" class="menu-view hidden w-full max-w-3xl text-center">
-                        <p class="text-sm font-black uppercase tracking-[0.28em] text-amber-200">Adventure Mode</p>
-                        <h2 class="mt-2 text-4xl font-black uppercase text-white sm:text-6xl">After Class</h2>
+                        <p id="storyKicker" class="text-sm font-black uppercase tracking-[0.28em] text-amber-200">Adventure Mode</p>
+                        <h2 id="storyTitle" class="mt-2 text-4xl font-black uppercase text-white sm:text-6xl">After Class</h2>
                         <div class="story-scene mt-6">
-                            <img src="assets/player1.png" alt="Khal Bo">
-                            <p>Khal Bo gets pushed around after class. Today, he walks back into the court and challenges the bullies one level at a time.</p>
+                            <img id="storyImage" src="assets/player1.png" alt="Khal Bo">
+                            <p id="storyText">Khal Bo gets pushed around after class. Today, he walks back into the court and challenges the bullies one level at a time.</p>
                         </div>
-                        <button id="skipStoryBtn" class="arcade-btn mt-5 bg-amber-300 text-slate-950 hover:bg-amber-200" type="button">Skip</button>
+                        <p id="storyProgress" class="mt-4 text-xs font-black uppercase tracking-[0.22em] text-slate-300">1 / 2</p>
+                        <button id="skipStoryBtn" class="arcade-btn mt-3 bg-amber-300 text-slate-950 hover:bg-amber-200" type="button">Next</button>
                     </div>
 
                     <div id="yellowSlipView" class="menu-view hidden w-full max-w-2xl text-center">
@@ -93,13 +94,7 @@
                 </div>
             </div>
 
-            <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
-                <div class="flex flex-wrap gap-2">
-                    <button id="startBtn" class="arcade-btn bg-emerald-600 text-white hover:bg-emerald-500">Start</button>
-                    <button id="resetBtn" class="arcade-btn bg-slate-800 text-white hover:bg-slate-700">Reset</button>
-                    <button id="mainMenuBtn" class="arcade-btn bg-amber-300 text-slate-950 hover:bg-amber-200">Main Menu</button>
-                </div>
-
+            <div class="mt-4 flex flex-wrap items-center justify-center gap-3">
                 <div class="flex items-center gap-2 sm:hidden">
                     <button id="leftBtn" class="touch-btn">Left</button>
                     <button id="fireBtn" class="touch-btn bg-orange-500 text-white">Throw</button>
@@ -110,7 +105,7 @@
                     <span>Move</span> WASD or Arrow Keys
                     <span>Throw</span> Space
                     <span>Ability</span> Q
-                    <span>Pause</span> P or button
+                    <span>Menu</span> P or button
                 </p>
             </div>
         </section>
